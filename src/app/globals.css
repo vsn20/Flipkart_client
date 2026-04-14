@@ -1,26 +1,280 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ─── Tailwind v4 Theme Extension ──────────────────── */
+@theme {
+  --color-flipkart-blue: #2874f0;
+  --color-flipkart-yellow: #ffe500;
+  --color-flipkart-orange: #ff9f00;
+  --color-flipkart-green: #388e3c;
+  --color-flipkart-dark: #212121;
+  --color-flipkart-gray: #878787;
+  --color-flipkart-light-gray: #f1f3f6;
+  --color-flipkart-border: #e0e0e0;
+  --color-flipkart-red: #ff6161;
+  --color-flipkart-cta: #fb641b;
+
+  --font-family-roboto: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ─── Base Styles ──────────────────────────────────── */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-family-roboto);
+    background-color: #f1f3f6;
+    color: #212121;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  button {
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  input, select, textarea {
+    font-family: inherit;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ─── Scrollbar ────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* ─── Component Styles ─────────────────────────────── */
+@layer components {
+  /* Product Card Hover */
+  .product-card {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    border: 1px solid #e0e0e0;
+    background: white;
+  }
+  .product-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+  }
+
+  /* Skeleton Loading */
+  .skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+  }
+
+  /* Flipkart CTA Buttons */
+  .btn-flipkart {
+    background: #fb641b;
+    color: white;
+    font-weight: 600;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: background 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-flipkart:hover {
+    background: #e85d19;
+  }
+  .btn-flipkart:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn-flipkart-yellow {
+    background: #ff9f00;
+    color: white;
+    font-weight: 600;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: background 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-flipkart-yellow:hover {
+    background: #e68f00;
+  }
+  .btn-flipkart-yellow:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Rating Badge */
+  .rating-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: #388e3c;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .rating-badge.low {
+    background: #ff6161;
+  }
+  .rating-badge.medium {
+    background: #ff9f00;
+  }
+
+  /* Quantity Stepper */
+  .qty-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #c2c2c2;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: white;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .qty-btn:hover {
+    background: #f0f0f0;
+  }
+  .qty-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* No Scrollbar */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Custom Animations */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.4s ease-out;
+  }
+  .animate-slide-in {
+    animation: slideInRight 0.3s ease-out;
+  }
+  .animate-bounce-in {
+    animation: bounceIn 0.5s ease-out;
+  }
+  .animate-pulse-custom {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Line clamp utilities (Tailwind v4 doesn't include by default) */
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* ─── Keyframes ────────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ─── Swiper Overrides ─────────────────────────────── */
+.swiper-pagination-bullet-active {
+  background: #2874f0 !important;
+}
+.swiper-button-next,
+.swiper-button-prev {
+  color: #2874f0 !important;
+  background: rgba(255,255,255,0.9);
+  border-radius: 4px;
+  width: 40px !important;
+  height: 80px !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.swiper-button-next::after,
+.swiper-button-prev::after {
+  font-size: 16px !important;
+  font-weight: bold;
 }

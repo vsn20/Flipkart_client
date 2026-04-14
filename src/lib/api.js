@@ -1,0 +1,87 @@
+import axios from 'axios';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add auth token to every request
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
+// Handle response errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ─── Auth API ────────────────────────────────────────
+export const authAPI = {
+  login: (data) => api.post('/auth/login', data),
+  register: (data) => api.post('/auth/register', data),
+  googleAuth: (data) => api.post('/auth/google', data),
+  guestLogin: () => api.post('/auth/guest'),
+  getMe: () => api.get('/auth/me'),
+  updateProfile: (data) => api.put('/auth/profile', data),
+};
+
+// ─── Products API ────────────────────────────────────
+export const productsAPI = {
+  getAll: (params) => api.get('/products', { params }),
+  getById: (id) => api.get(`/products/${id}`),
+  getFeatured: () => api.get('/products/featured'),
+  searchSuggestions: (q) => api.get('/products/search', { params: { q } }),
+  getBrands: (category_id) => api.get('/products/brands', { params: { category_id } }),
+};
+
+// ─── Categories API ──────────────────────────────────
+export const categoriesAPI = {
+  getAll: () => api.get('/categories'),
+  getProducts: (id, params) => api.get(`/categories/${id}/products`, { params }),
+};
+
+// ─── Cart API ────────────────────────────────────────
+export const cartAPI = {
+  get: () => api.get('/cart'),
+  getCount: () => api.get('/cart/count'),
+  add: (data) => api.post('/cart/add', data),
+  update: (itemId, data) => api.put(`/cart/update/${itemId}`, data),
+  remove: (itemId) => api.delete(`/cart/remove/${itemId}`),
+  clear: () => api.delete('/cart/clear'),
+};
+
+// ─── Orders API ──────────────────────────────────────
+export const ordersAPI = {
+  place: (data) => api.post('/orders', data),
+  getAll: (params) => api.get('/orders', { params }),
+  getById: (id) => api.get(`/orders/${id}`),
+};
+
+// ─── Wishlist API ────────────────────────────────────
+export const wishlistAPI = {
+  get: () => api.get('/wishlist'),
+  add: (product_id) => api.post('/wishlist/add', { product_id }),
+  remove: (productId) => api.delete(`/wishlist/remove/${productId}`),
+  check: (productId) => api.get(`/wishlist/check/${productId}`),
+};
+
+export default api;
