@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import ProductCard from '@/components/product/ProductCard';
 import { productsAPI, categoriesAPI } from '@/lib/api';
-import { FiFilter, FiX, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 function ProductsContent() {
   const searchParams = useSearchParams();
@@ -14,78 +14,37 @@ function ProductsContent() {
   const [categories, setCategories] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
 
-  // Filters state
   const [filters, setFilters] = useState({
-    category: categorySlug,
-    min_price: '',
-    max_price: '',
-    min_rating: '',
-    sort: 'relevance',
-    search: searchQuery,
-    page: 1,
+    category: categorySlug, min_price: '', max_price: '', min_rating: '', sort: 'rating', search: searchQuery, page: 1,
   });
 
-  const [expandedFilter, setExpandedFilter] = useState({
-    category: true,
-    price: true,
-    rating: true,
-    brand: false,
-  });
+  useEffect(() => { categoriesAPI.getAll().then(r => setCategories(r.data.categories || [])); }, []);
+  useEffect(() => { setFilters(p => ({ ...p, search: searchQuery, category: categorySlug, page: 1 })); }, [searchQuery, categorySlug]);
+  useEffect(() => { fetchProducts(); }, [filters]);
 
-  useEffect(() => {
-    categoriesAPI.getAll().then((res) => setCategories(res.data.categories || []));
-  }, []);
-
-  useEffect(() => {
-    setFilters((prev) => ({
-      ...prev,
-      search: searchQuery,
-      category: categorySlug,
-      page: 1,
-    }));
-  }, [searchQuery, categorySlug]);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [filters]);
-
-  const fetchProducts = async () => {
+  async function fetchProducts() {
     setLoading(true);
     try {
-      const params = {};
+      const params = { page: filters.page, limit: 20 };
       if (filters.search) params.search = filters.search;
       if (filters.category) params.category = filters.category;
       if (filters.min_price) params.min_price = filters.min_price;
       if (filters.max_price) params.max_price = filters.max_price;
       if (filters.min_rating) params.min_rating = filters.min_rating;
       if (filters.sort) params.sort = filters.sort;
-      params.page = filters.page;
-      params.limit = 16;
-
       const res = await productsAPI.getAll(params);
       setProducts(res.data.products || []);
       setPagination(res.data.pagination);
-    } catch (error) {
-      console.error('Failed to fetch products:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    } catch { setProducts([]); } finally { setLoading(false); }
+  }
 
   const sortOptions = [
     { value: 'rating', label: 'Popularity' },
     { value: 'price_low', label: 'Price -- Low to High' },
     { value: 'price_high', label: 'Price -- High to Low' },
     { value: 'newest', label: 'Newest First' },
-  ];
-
-  const ratingOptions = [
-    { value: '4', label: '4★ & above' },
-    { value: '3', label: '3★ & above' },
-    { value: '2', label: '2★ & above' },
-    { value: '1', label: '1★ & above' },
   ];
 
   const priceRanges = [
@@ -97,283 +56,194 @@ function ProductsContent() {
     { min: '50000', max: '', label: 'Above ₹50,000' },
   ];
 
-  const activeCategory = categories.find((c) => c.slug === filters.category);
+  const activeCategory = categories.find(c => c.slug === filters.category);
 
-  return (
-    <div className="max-w-[1400px] mx-auto px-2 sm:px-4 py-3">
-      {/* Breadcrumb - matching Flipkart style */}
-      <div className="text-xs text-gray-500 mb-2 px-1">
-        <span className="hover:text-[#2874f0] cursor-pointer">Home</span>
-        <span className="mx-1">&gt;</span>
-        {activeCategory ? (
-          <span className="text-gray-700 font-medium">{activeCategory.name}</span>
-        ) : filters.search ? (
-          <span className="text-gray-700">Search: &quot;{filters.search}&quot;</span>
-        ) : (
-          <span className="text-gray-700 font-medium">All Products</span>
+  const Sidebar = () => (
+    <div style={{ background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,.08)', position: 'sticky', top: 56, maxHeight: 'calc(100vh - 70px)', overflowY: 'auto' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: '1px solid #f0f0f0' }}>
+        <span style={{ fontSize: 16, fontWeight: 700, color: '#212121' }}>Filters</span>
+        {(filters.category || filters.min_price || filters.min_rating) && (
+          <button onClick={() => setFilters(p => ({ ...p, category: '', min_price: '', max_price: '', min_rating: '', page: 1 }))}
+            style={{ fontSize: 13, color: '#2874f0', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>
+            CLEAR ALL
+          </button>
         )}
       </div>
 
-      <div className="flex gap-3">
-        {/* Filters Sidebar - matching real Flipkart */}
-        <aside className={`${showFilters ? 'fixed inset-0 z-40 bg-white overflow-y-auto' : 'hidden'} lg:block lg:static lg:w-[250px] shrink-0`}>
-          <div className="bg-white rounded-sm shadow-sm">
-            {/* Filters Header */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
-              <button className="lg:hidden" onClick={() => setShowFilters(false)}>
-                <FiX size={20} />
-              </button>
-            </div>
+      {/* CATEGORIES */}
+      <FilterSection title="CATEGORIES">
+        {filters.category && (
+          <button onClick={() => setFilters(p => ({ ...p, category: '', page: 1 }))}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#2874f0', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 6, padding: 0 }}>
+            ‹ All Categories
+          </button>
+        )}
+        {categories.map(cat => (
+          <label key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}>
+            <input type="radio" name="cat" checked={filters.category === cat.slug}
+              onChange={() => setFilters(p => ({ ...p, category: cat.slug, page: 1 }))}
+              style={{ accentColor: '#2874f0', width: 14, height: 14 }}
+            />
+            <span style={{ fontSize: 13, color: filters.category === cat.slug ? '#2874f0' : '#555', fontWeight: filters.category === cat.slug ? 600 : 400 }}>
+              {cat.name}
+            </span>
+          </label>
+        ))}
+      </FilterSection>
 
-            {/* Category Filter - Flipkart uses breadcrumb-style navigation */}
-            <div className="border-b px-4 py-3">
-              <button
-                className="flex items-center justify-between w-full text-xs font-bold text-gray-900 uppercase tracking-wide mb-2"
-                onClick={() => setExpandedFilter((p) => ({ ...p, category: !p.category }))}
-              >
-                Categories
-                {expandedFilter.category ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
-              </button>
-              {expandedFilter.category && (
-                <div className="space-y-0.5">
-                  {filters.category && (
-                    <button
-                      className="flex items-center gap-1 text-xs text-gray-500 mb-1 hover:text-[#2874f0]"
-                      onClick={() => setFilters((p) => ({ ...p, category: '', page: 1 }))}
-                    >
-                      &lt; All Categories
-                    </button>
-                  )}
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      className={`block text-sm w-full text-left py-1 pl-2 border-l-2 ${
-                        filters.category === cat.slug
-                          ? 'text-[#2874f0] font-semibold border-[#2874f0]'
-                          : 'text-gray-600 border-transparent hover:text-[#2874f0]'
-                      }`}
-                      onClick={() => setFilters((p) => ({ ...p, category: cat.slug, page: 1 }))}
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+      {/* PRICE */}
+      <FilterSection title="PRICE">
+        <PriceRangeSlider
+          min={0}
+          max={100000}
+          valueMin={filters.min_price ? parseInt(filters.min_price) : 0}
+          valueMax={filters.max_price ? parseInt(filters.max_price) : 100000}
+          onChange={(min, max) => setFilters(p => ({ ...p, min_price: min > 0 ? String(min) : '', max_price: max < 100000 ? String(max) : '', page: 1 }))}
+        />
+        {priceRanges.map(r => (
+          <label key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}>
+            <input type="checkbox" checked={filters.min_price === r.min && filters.max_price === r.max}
+              onChange={() => {
+                const same = filters.min_price === r.min && filters.max_price === r.max;
+                setFilters(p => ({ ...p, min_price: same ? '' : r.min, max_price: same ? '' : r.max, page: 1 }));
+              }}
+              style={{ accentColor: '#2874f0', width: 14, height: 14 }}
+            />
+            <span style={{ fontSize: 13, color: '#555' }}>{r.label}</span>
+          </label>
+        ))}
+        {(filters.min_price || filters.max_price) && (
+          <button onClick={() => setFilters(p => ({ ...p, min_price: '', max_price: '', page: 1 }))}
+            style={{ fontSize: 12, color: '#2874f0', background: 'none', border: 'none', cursor: 'pointer', marginTop: 6, padding: 0 }}>
+            Clear price filter
+          </button>
+        )}
+      </FilterSection>
 
-            {/* Price Filter */}
-            <div className="border-b px-4 py-3">
-              <button
-                className="flex items-center justify-between w-full text-xs font-bold text-gray-900 uppercase tracking-wide mb-2"
-                onClick={() => setExpandedFilter((p) => ({ ...p, price: !p.price }))}
-              >
-                Price
-                {expandedFilter.price ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
-              </button>
-              {expandedFilter.price && (
-                <div className="space-y-1">
-                  {/* Price slider visual */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex-1 h-[3px] bg-gray-200 rounded relative">
-                      <div className="absolute left-0 top-0 h-full bg-[#2874f0] rounded" style={{ width: '40%' }} />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
-                    <span className="border px-2 py-1 rounded text-xs">
-                      Min
-                    </span>
-                    <span>to</span>
-                    <span className="border px-2 py-1 rounded text-xs">
-                      ₹{filters.max_price || '∞'}
-                    </span>
-                  </div>
-                  {priceRanges.map((range) => {
-                    const isActive = filters.min_price === range.min && filters.max_price === range.max;
-                    return (
-                      <label
-                        key={range.label}
-                        className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer hover:text-[#2874f0] py-0.5"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isActive}
-                          onChange={() => {
-                            if (isActive) {
-                              setFilters((p) => ({ ...p, min_price: '', max_price: '', page: 1 }));
-                            } else {
-                              setFilters((p) => ({ ...p, min_price: range.min, max_price: range.max, page: 1 }));
-                            }
-                          }}
-                          className="w-3.5 h-3.5 accent-[#2874f0]"
-                        />
-                        {range.label}
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+      {/* CUSTOMER RATINGS */}
+      <FilterSection title="CUSTOMER RATINGS">
+        {[{v:'4',l:'4★ & above'},{v:'3',l:'3★ & above'},{v:'2',l:'2★ & above'},{v:'1',l:'1★ & above'}].map(opt => (
+          <label key={opt.v} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}>
+            <input type="checkbox" checked={filters.min_rating === opt.v}
+              onChange={() => setFilters(p => ({ ...p, min_rating: p.min_rating === opt.v ? '' : opt.v, page: 1 }))}
+              style={{ accentColor: '#2874f0', width: 14, height: 14 }}
+            />
+            <span style={{ fontSize: 13, color: '#555' }}>{opt.l}</span>
+          </label>
+        ))}
+      </FilterSection>
 
-            {/* Customer Ratings Filter - with checkboxes like real Flipkart */}
-            <div className="border-b px-4 py-3">
-              <button
-                className="flex items-center justify-between w-full text-xs font-bold text-gray-900 uppercase tracking-wide mb-2"
-                onClick={() => setExpandedFilter((p) => ({ ...p, rating: !p.rating }))}
-              >
-                Customer Ratings
-                {expandedFilter.rating ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
-              </button>
-              {expandedFilter.rating && (
-                <div className="space-y-1">
-                  {ratingOptions.map((opt) => {
-                    const isActive = filters.min_rating === opt.value;
-                    return (
-                      <label
-                        key={opt.value}
-                        className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer hover:text-[#2874f0] py-0.5"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isActive}
-                          onChange={() => setFilters((p) => ({ ...p, min_rating: isActive ? '' : opt.value, page: 1 }))}
-                          className="w-3.5 h-3.5 accent-[#2874f0]"
-                        />
-                        {opt.label}
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+      {/* BRAND */}
+      <FilterSection title="BRAND">
+        <input type="text" placeholder="Search Brand" style={{ width: '100%', border: '1px solid #c2c2c2', borderRadius: 2, padding: '6px 10px', fontSize: 12, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }}/>
+        {['Apple','Samsung','OnePlus','Nike','Sony','LG','Realme','POCO'].map(b => (
+          <label key={b} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}>
+            <input type="checkbox" style={{ accentColor: '#2874f0', width: 14, height: 14 }}/>
+            <span style={{ fontSize: 13, color: '#555' }}>{b}</span>
+          </label>
+        ))}
+      </FilterSection>
 
-            {/* Brand Filter - collapsed by default like Flipkart */}
-            <div className="px-4 py-3">
-              <button
-                className="flex items-center justify-between w-full text-xs font-bold text-gray-900 uppercase tracking-wide mb-2"
-                onClick={() => setExpandedFilter((p) => ({ ...p, brand: !p.brand }))}
-              >
-                Brand
-                {expandedFilter.brand ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
-              </button>
-              {expandedFilter.brand && (
-                <div className="space-y-1">
-                  <div className="relative mb-2">
-                    <input
-                      type="text"
-                      placeholder="Search Brand"
-                      className="w-full border rounded px-3 py-1.5 text-xs outline-none focus:border-[#2874f0]"
-                    />
-                  </div>
-                  {['Apple', 'Samsung', 'OnePlus', 'Nike', 'Sony', 'LG', 'Philips', 'LEGO'].map((brand) => (
-                    <label key={brand} className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer hover:text-[#2874f0] py-0.5">
-                      <input type="checkbox" className="w-3.5 h-3.5 accent-[#2874f0]" />
-                      {brand}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
+      {/* ASSURED */}
+      <FilterSection title="OFFERS" last>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}>
+          <input type="checkbox" style={{ accentColor: '#2874f0', width: 14, height: 14 }}/>
+          <svg width="60" height="16" viewBox="0 0 60 16"><rect width="60" height="16" rx="2" fill="#2874f0"/><text x="4" y="12" fill="white" fontSize="8" fontWeight="700">f</text><text x="14" y="12" fill="#ffe500" fontSize="7.5" fontWeight="700">Assured</text></svg>
+        </label>
+      </FilterSection>
+    </div>
+  );
+
+  return (
+    <div style={{ background: '#f1f3f6', minHeight: '80vh', padding: '8px 0' }}>
+      <div style={{ maxWidth: 1300, margin: '0 auto', padding: '0 8px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+
+        {/* Sidebar */}
+        <div style={{ width: 230, flexShrink: 0, display: 'block' }}>
+          <Sidebar />
+        </div>
+
+        {/* Main */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Breadcrumb */}
+          <div style={{ fontSize: 12, color: '#878787', marginBottom: 6, padding: '4px 0' }}>
+            <Link href="/" style={{ color: '#878787', textDecoration: 'none' }} onMouseEnter={e=>e.target.style.color='#2874f0'} onMouseLeave={e=>e.target.style.color='#878787'}>Home</Link>
+            {activeCategory && <><span style={{ margin: '0 6px' }}>&gt;</span><span style={{ color: '#212121' }}>{activeCategory.name}</span></>}
+            {filters.search && <><span style={{ margin: '0 6px' }}>&gt;</span><span style={{ color: '#212121' }}>Search: &quot;{filters.search}&quot;</span></>}
           </div>
-        </aside>
 
-        {/* Main Content */}
-        <div className="flex-1 min-w-0">
-          {/* Header: Title + Count */}
+          {/* Category description + title */}
           {activeCategory && (
-            <div className="bg-white rounded-sm shadow-sm px-4 py-3 mb-2">
-              <h1 className="text-lg font-semibold text-gray-900">
-                {activeCategory.name}
-              </h1>
-              <p className="text-xs text-gray-500">
-                {filters.search && <>Showing results for &quot;<strong>{filters.search}</strong>&quot; &mdash; </>}
-                <span style={{ color: '#878787' }}>
-                  (Showing 1 &ndash; {products.length} of {pagination?.total || 0} products)
-                </span>
-              </p>
+            <div style={{ background: '#fff', padding: '12px 16px', marginBottom: 4, boxShadow: '0 1px 3px rgba(0,0,0,.07)' }}>
+              <h1 style={{ fontSize: 16, fontWeight: 600, color: '#212121', display: 'inline' }}>{activeCategory.name}</h1>
+              <span style={{ fontSize: 13, color: '#878787', marginLeft: 8 }}>
+                (Showing 1 – {products.length} of {pagination?.total || 0} products)
+              </span>
+            </div>
+          )}
+          {filters.search && !activeCategory && (
+            <div style={{ background: '#fff', padding: '12px 16px', marginBottom: 4, boxShadow: '0 1px 3px rgba(0,0,0,.07)' }}>
+              <span style={{ fontSize: 14, color: '#212121' }}>
+                Showing <strong>{pagination?.total || 0}</strong> results for &quot;<strong>{filters.search}</strong>&quot;
+              </span>
             </div>
           )}
 
-          {/* Sort Bar - matching Flipkart exactly */}
-          <div className="bg-white rounded-sm shadow-sm p-3 mb-2 flex items-center justify-between flex-wrap gap-2 border-b-2 border-gray-100">
-            <div className="flex items-center gap-2">
-              <button
-                className="lg:hidden flex items-center gap-1 text-sm text-[#2874f0] font-medium border border-[#2874f0] px-3 py-1.5 rounded"
-                onClick={() => setShowFilters(true)}
-              >
-                <FiFilter size={14} /> Filters
-              </button>
-              {!activeCategory && (
-                <span className="text-sm text-gray-600">
-                  Showing <strong>{pagination?.total || 0}</strong> results
-                  {filters.search && <span> for &quot;<strong>{filters.search}</strong>&quot;</span>}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-0 overflow-x-auto no-scrollbar">
-              <span className="text-sm font-semibold text-gray-800 px-3 py-1.5 whitespace-nowrap">Sort By</span>
-              {sortOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  className={`text-sm px-3 py-1.5 whitespace-nowrap transition-colors ${
-                    filters.sort === opt.value
-                      ? 'text-[#2874f0] font-bold border-b-[3px] border-[#2874f0]'
-                      : 'text-gray-600 hover:text-[#2874f0]'
-                  }`}
-                  onClick={() => setFilters((p) => ({ ...p, sort: opt.value }))}
-                >
+          {/* Sort Bar */}
+          <div style={{ background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', marginBottom: 4, boxShadow: '0 1px 3px rgba(0,0,0,.07)', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#212121', paddingRight: 12, paddingTop: 12, paddingBottom: 12, marginRight: 4 }}>Sort By</span>
+              {sortOptions.map(opt => (
+                <button key={opt.value} onClick={() => setFilters(p => ({ ...p, sort: opt.value }))}
+                  style={{ padding: '12px 14px', fontSize: 14, background: 'none', border: 'none', cursor: 'pointer', color: filters.sort === opt.value ? '#2874f0' : '#212121', fontWeight: filters.sort === opt.value ? 700 : 400, borderBottom: filters.sort === opt.value ? '3px solid #2874f0' : '3px solid transparent', whiteSpace: 'nowrap' }}>
                   {opt.label}
                 </button>
               ))}
             </div>
+            {/* Discount sort */}
+            <button onClick={() => setFilters(p => ({ ...p, sort: 'discount' }))}
+              style={{ padding: '12px 14px', fontSize: 14, background: 'none', border: 'none', cursor: 'pointer', color: filters.sort === 'discount' ? '#2874f0' : '#212121', fontWeight: filters.sort === 'discount' ? 700 : 400, borderBottom: filters.sort === 'discount' ? '3px solid #2874f0' : '3px solid transparent' }}>
+              Discount
+            </button>
           </div>
 
           {/* Products Grid */}
           {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-px bg-gray-200">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: '#f0f0f0' }}>
               {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="bg-white p-4">
-                  <div className="aspect-[3/4] skeleton mb-3" />
-                  <div className="h-3 skeleton mb-2 w-3/4" />
-                  <div className="h-3 skeleton mb-2 w-1/2" />
-                  <div className="h-4 skeleton w-1/3" />
+                <div key={i} style={{ background: '#fff', padding: 16 }}>
+                  <div style={{ paddingBottom: '100%', background: '#f5f5f5', marginBottom: 10 }}/>
+                  <div style={{ height: 12, background: '#f5f5f5', marginBottom: 6, width: '80%' }}/>
+                  <div style={{ height: 12, background: '#f5f5f5', width: '50%' }}/>
                 </div>
               ))}
             </div>
           ) : products.length === 0 ? (
-            <div className="bg-white rounded-sm shadow-sm p-16 text-center">
-              <p className="text-6xl mb-4">🔍</p>
-              <h3 className="text-lg font-medium text-gray-800 mb-1">No products found</h3>
-              <p className="text-sm text-gray-500">Try adjusting your filters or search terms</p>
+            <div style={{ background: '#fff', padding: '60px 20px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,.07)' }}>
+              <div style={{ fontSize: 80, marginBottom: 16 }}>🔍</div>
+              <h3 style={{ fontSize: 20, fontWeight: 500, color: '#212121', marginBottom: 8 }}>No products found</h3>
+              <p style={{ fontSize: 14, color: '#878787' }}>Try adjusting your filters or search terms</p>
             </div>
           ) : (
             <>
-              {/* Grid with 1px gap like Flipkart */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-px bg-gray-200 rounded-sm overflow-hidden shadow-sm">
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: '#f0f0f0' }}>
+                {products.map(p => <ProductCard key={p.id} product={p}/>)}
               </div>
 
               {/* Pagination */}
               {pagination && pagination.totalPages > 1 && (
-                <div className="flex items-center justify-center gap-3 mt-4 bg-white rounded-sm shadow-sm py-3">
-                  <button
-                    className="px-5 py-2 text-sm text-[#2874f0] font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 rounded uppercase"
-                    disabled={filters.page <= 1}
-                    onClick={() => setFilters((p) => ({ ...p, page: p.page - 1 }))}
-                  >
-                    Previous
+                <div style={{ background: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, padding: 16, marginTop: 4, boxShadow: '0 1px 3px rgba(0,0,0,.07)' }}>
+                  <button disabled={filters.page <= 1} onClick={() => setFilters(p => ({ ...p, page: p.page - 1 }))}
+                    style={{ padding: '8px 24px', fontSize: 13, fontWeight: 700, color: '#2874f0', background: 'none', border: '1px solid #2874f0', borderRadius: 2, cursor: filters.page <= 1 ? 'not-allowed' : 'pointer', opacity: filters.page <= 1 ? 0.4 : 1 }}>
+                    ‹ PREVIOUS
                   </button>
-                  <span className="text-sm text-gray-600">
+                  <span style={{ fontSize: 14, color: '#212121' }}>
                     Page <strong>{pagination.page}</strong> of <strong>{pagination.totalPages}</strong>
                   </span>
-                  <button
-                    className="px-5 py-2 text-sm text-[#2874f0] font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 rounded uppercase"
-                    disabled={filters.page >= pagination.totalPages}
-                    onClick={() => setFilters((p) => ({ ...p, page: p.page + 1 }))}
-                  >
-                    Next
+                  <button disabled={filters.page >= pagination.totalPages} onClick={() => setFilters(p => ({ ...p, page: p.page + 1 }))}
+                    style={{ padding: '8px 24px', fontSize: 13, fontWeight: 700, color: '#2874f0', background: 'none', border: '1px solid #2874f0', borderRadius: 2, cursor: filters.page >= pagination.totalPages ? 'not-allowed' : 'pointer', opacity: filters.page >= pagination.totalPages ? 0.4 : 1 }}>
+                    NEXT ›
                   </button>
                 </div>
               )}
@@ -385,9 +255,142 @@ function ProductsContent() {
   );
 }
 
+function FilterSection({ title, children, last }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div style={{ borderBottom: last ? 'none' : '1px solid #f0f0f0', padding: '14px 16px' }}>
+      <button onClick={() => setOpen(v => !v)}
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', background: 'none', border: 'none', cursor: 'pointer', marginBottom: open ? 10 : 0, padding: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#212121', letterSpacing: 0.5 }}>{title}</span>
+        <span style={{ fontSize: 14, color: '#212121', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>⌃</span>
+      </button>
+      {open && <div>{children}</div>}
+    </div>
+  );
+}
+
+function PriceRangeSlider({ min, max, valueMin, valueMax, onChange }) {
+  const [localMin, setLocalMin] = useState(valueMin);
+  const [localMax, setLocalMax] = useState(valueMax);
+  const [dragging, setDragging] = useState(false);
+  const timeoutRef = useRef(null);
+
+  useEffect(() => {
+    if (!dragging) {
+      setLocalMin(valueMin);
+      setLocalMax(valueMax);
+    }
+  }, [valueMin, valueMax, dragging]);
+
+  const handleMinChange = (e) => {
+    const val = Math.min(parseInt(e.target.value), localMax - 1000);
+    setLocalMin(val);
+    setDragging(true);
+    clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      onChange(val, localMax);
+      setDragging(false);
+    }, 300);
+  };
+
+  const handleMaxChange = (e) => {
+    const val = Math.max(parseInt(e.target.value), localMin + 1000);
+    setLocalMax(val);
+    setDragging(true);
+    clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      onChange(localMin, val);
+      setDragging(false);
+    }, 300);
+  };
+
+  const minPercent = ((localMin - min) / (max - min)) * 100;
+  const maxPercent = ((localMax - min) / (max - min)) * 100;
+
+  const formatVal = (v) => {
+    if (v >= 100000) return '₹1L+';
+    if (v >= 1000) return `₹${(v/1000).toFixed(0)}K`;
+    return `₹${v}`;
+  };
+
+  return (
+    <div style={{ marginBottom: 12, padding: '0 2px' }}>
+      {/* Labels */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+        <span style={{ fontSize: 11, color: '#2874f0', fontWeight: 600 }}>{formatVal(localMin)}</span>
+        <span style={{ fontSize: 11, color: '#2874f0', fontWeight: 600 }}>{formatVal(localMax)}</span>
+      </div>
+      {/* Slider track */}
+      <div style={{ position: 'relative', height: 30 }}>
+        {/* Background track */}
+        <div style={{ position: 'absolute', top: 12, left: 0, right: 0, height: 4, background: '#e0e0e0', borderRadius: 2 }} />
+        {/* Active track */}
+        <div style={{
+          position: 'absolute', top: 12, height: 4, background: '#2874f0', borderRadius: 2,
+          left: `${minPercent}%`, width: `${maxPercent - minPercent}%`,
+        }} />
+        {/* Min slider */}
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={500}
+          value={localMin}
+          onChange={handleMinChange}
+          style={{
+            position: 'absolute', top: 2, left: 0, width: '100%', height: 24,
+            appearance: 'none', WebkitAppearance: 'none', background: 'transparent',
+            pointerEvents: 'none', zIndex: 3, margin: 0, padding: 0,
+          }}
+          className="price-range-thumb"
+        />
+        {/* Max slider */}
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={500}
+          value={localMax}
+          onChange={handleMaxChange}
+          style={{
+            position: 'absolute', top: 2, left: 0, width: '100%', height: 24,
+            appearance: 'none', WebkitAppearance: 'none', background: 'transparent',
+            pointerEvents: 'none', zIndex: 4, margin: 0, padding: 0,
+          }}
+          className="price-range-thumb"
+        />
+      </div>
+      <style>{`
+        .price-range-thumb::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: #2874f0;
+          border: 2px solid #fff;
+          box-shadow: 0 1px 4px rgba(0,0,0,.3);
+          cursor: pointer;
+          pointer-events: auto;
+        }
+        .price-range-thumb::-moz-range-thumb {
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: #2874f0;
+          border: 2px solid #fff;
+          box-shadow: 0 1px 4px rgba(0,0,0,.3);
+          cursor: pointer;
+          pointer-events: auto;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export default function ProductsPage() {
   return (
-    <Suspense fallback={<div className="h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#2874f0]"></div></div>}>
+    <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}><div style={{ width: 40, height: 40, border: '3px solid #f0f0f0', borderTop: '3px solid #2874f0', borderRadius: '50%', animation: 'spin 1s linear infinite' }}/></div>}>
       <ProductsContent />
     </Suspense>
   );

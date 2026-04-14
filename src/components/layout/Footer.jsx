@@ -1,107 +1,88 @@
-import Link from 'next/link';
+'use client';
 
 export default function Footer() {
+  const cols = [
+    {
+      title: 'ABOUT',
+      links: ['Contact Us','About Us','Careers','Flipkart Stories','Press','Corporate Information'],
+    },
+    {
+      title: 'GROUP COMPANIES',
+      links: ['Myntra','Cleartrip','Shopsy'],
+    },
+    {
+      title: 'HELP',
+      links: ['Payments','Shipping','Cancellation & Returns','FAQ','Report Infringement'],
+    },
+    {
+      title: 'CONSUMER POLICY',
+      links: ['Cancellation & Returns','Terms Of Use','Security','Privacy','Sitemap','Grievance Redressal','EPR Compliance'],
+    },
+  ];
+
   return (
-    <footer className="bg-[#172337] text-white mt-8">
-      {/* Top Section */}
-      <div className="max-w-[1400px] mx-auto px-4 py-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8">
-          {/* About */}
-          <div>
-            <h4 className="text-xs text-gray-400 font-semibold mb-3 uppercase tracking-wider">About</h4>
-            <ul className="space-y-2">
-              {['Contact Us', 'About Us', 'Careers', 'Flipkart Stories', 'Press', 'Corporate Information'].map((item) => (
-                <li key={item}>
-                  <span className="text-xs text-gray-300 hover:text-white cursor-pointer transition-colors">{item}</span>
-                </li>
+    <footer style={{ background: '#172337', marginTop: 8 }}>
+      <div style={{ maxWidth: 1300, margin: '0 auto', padding: '40px 20px 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 32, paddingBottom: 32, borderBottom: '1px solid #2a3f5f' }}>
+          {cols.map(col => (
+            <div key={col.title}>
+              <h4 style={{ color: '#878787', fontSize: 12, fontWeight: 700, letterSpacing: 0.5, marginBottom: 16 }}>{col.title}</h4>
+              {col.links.map(l => (
+                <p key={l}><a href="#" style={{ color: '#fff', fontSize: 13, textDecoration: 'none', lineHeight: '2.2' }}
+                  onMouseEnter={e => e.target.style.textDecoration='underline'}
+                  onMouseLeave={e => e.target.style.textDecoration='none'}
+                >{l}</a></p>
               ))}
-            </ul>
+            </div>
+          ))}
+
+          {/* Mail & Registered */}
+          <div>
+            <h4 style={{ color: '#878787', fontSize: 12, fontWeight: 700, letterSpacing: 0.5, marginBottom: 16 }}>MAIL US:</h4>
+            <p style={{ color: '#fff', fontSize: 13, lineHeight: 1.8 }}>
+              Flipkart Internet Private Limited,<br/>
+              Buildings Alyssa, Begonia &amp;<br/>
+              Cascade Towers, Embassy Tech Village,<br/>
+              Outer Ring Road, Devarabeesanahalli Village,<br/>
+              Bengaluru, 560103,<br/>
+              Karnataka, India<br/>
+              CIN: U51109KA2012PTC066107<br/>
+              Telephone: <a href="tel:044-45614700" style={{ color: '#fff' }}>044-45614700</a>
+            </p>
           </div>
 
-          {/* Group Companies */}
           <div>
-            <h4 className="text-xs text-gray-400 font-semibold mb-3 uppercase tracking-wider">Group Companies</h4>
-            <ul className="space-y-2">
-              {['Myntra', 'Cleartrip', 'Shopsy'].map((item) => (
-                <li key={item}>
-                  <span className="text-xs text-gray-300 hover:text-white cursor-pointer transition-colors">{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Help */}
-          <div>
-            <h4 className="text-xs text-gray-400 font-semibold mb-3 uppercase tracking-wider">Help</h4>
-            <ul className="space-y-2">
-              {['Payments', 'Shipping', 'Cancellation & Returns', 'FAQ', 'Report Infringement'].map((item) => (
-                <li key={item}>
-                  <span className="text-xs text-gray-300 hover:text-white cursor-pointer transition-colors">{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Consumer Policy */}
-          <div>
-            <h4 className="text-xs text-gray-400 font-semibold mb-3 uppercase tracking-wider">Consumer Policy</h4>
-            <ul className="space-y-2">
-              {['Cancellation & Returns', 'Terms Of Use', 'Security', 'Privacy', 'Sitemap', 'Grievance Redressal', 'EPR Compliance'].map((item) => (
-                <li key={item}>
-                  <span className="text-xs text-gray-300 hover:text-white cursor-pointer transition-colors">{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Mail Us */}
-          <div>
-            <h4 className="text-xs text-gray-400 font-semibold mb-3 uppercase tracking-wider">Mail Us:</h4>
-            <p className="text-xs text-gray-300 leading-5">
-              Flipkart Internet Private Limited,<br />
-              Buildings Alyssa, Begonia &<br />
-              Clove Embassy Tech Village,<br />
-              Outer Ring Road, Devarabeesanahalli Village,<br />
-              Bengaluru, 560103,<br />
+            <h4 style={{ color: '#878787', fontSize: 12, fontWeight: 700, letterSpacing: 0.5, marginBottom: 16 }}>REGISTERED OFFICE ADDRESS:</h4>
+            <p style={{ color: '#fff', fontSize: 13, lineHeight: 1.8 }}>
+              Flipkart Internet Private Limited,<br/>
+              Buildings Alyssa, Begonia &amp;<br/>
+              Clove Embassy Tech Village,<br/>
+              Outer Ring Road, Devarabeesanahalli Village,<br/>
+              Bengaluru, 560103,<br/>
               Karnataka, India
             </p>
           </div>
-
-          {/* Registered Office */}
-          <div>
-            <h4 className="text-xs text-gray-400 font-semibold mb-3 uppercase tracking-wider">Registered Office Address:</h4>
-            <p className="text-xs text-gray-300 leading-5">
-              Flipkart Internet Private Limited,<br />
-              Buildings Alyssa, Begonia &<br />
-              Clove Embassy Tech Village,<br />
-              Outer Ring Road, Devarabeesanahalli Village,<br />
-              Bengaluru, 560103,<br />
-              Karnataka, India<br />
-              CIN: U51109KA2012PTC066107<br />
-              Telephone: 044-45614700
-            </p>
-          </div>
         </div>
-      </div>
 
-      {/* Bottom Section */}
-      <div className="border-t border-gray-700">
-        <div className="max-w-[1400px] mx-auto px-4 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-6">
-              {[
-                { icon: '🏪', text: 'Become a Seller' },
-                { icon: '📢', text: 'Advertise' },
-                { icon: '🎁', text: 'Gift Cards' },
-                { icon: '❓', text: 'Help Center' },
-              ].map((item) => (
-                <span key={item.text} className="flex items-center gap-1.5 text-xs text-gray-300 hover:text-white cursor-pointer transition-colors">
-                  <span>{item.icon}</span>
-                  {item.text}
-                </span>
-              ))}
-            </div>
-            <p className="text-xs text-gray-400">© 2024 Flipkart Clone. Built for educational purposes.</p>
+        {/* Bottom bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 20 }}>
+            {[
+              { icon: '🏬', label: 'Become a Seller' },
+              { icon: '📢', label: 'Advertise' },
+              { icon: '🎁', label: 'Gift Cards' },
+              { icon: '❓', label: 'Help Center' },
+            ].map(item => (
+              <a key={item.label} href="#" style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#fff', fontSize: 12, textDecoration: 'none', fontWeight: 500 }}>
+                <span>{item.icon}</span>{item.label}
+              </a>
+            ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span style={{ color: '#fff', fontSize: 12 }}>
+              © {new Date().getFullYear()} Flipkart Clone. Built for educational purposes.
+            </span>
           </div>
         </div>
       </div>

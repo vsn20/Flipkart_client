@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiSearch, FiShoppingCart, FiUser, FiHeart, FiChevronDown, FiMenu, FiX, FiLogOut, FiPackage, FiStar } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { productsAPI } from '@/lib/api';
@@ -16,35 +15,27 @@ export default function Navbar() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const searchRef = useRef(null);
   const userMenuRef = useRef(null);
+  const moreMenuRef = useRef(null);
 
-  // Close dropdowns on outside click
   useEffect(() => {
     const handleClick = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
-        setShowSuggestions(false);
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
-        setShowUserMenu(false);
-      }
+      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSuggestions(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false);
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) setShowMoreMenu(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
   const fetchSuggestions = debounce(async (query) => {
-    if (query.length < 2) {
-      setSuggestions([]);
-      return;
-    }
+    if (query.length < 2) { setSuggestions([]); return; }
     try {
       const res = await productsAPI.searchSuggestions(query);
       setSuggestions(res.data.suggestions || []);
-    } catch {
-      setSuggestions([]);
-    }
+    } catch { setSuggestions([]); }
   }, 300);
 
   const handleSearchChange = (e) => {
@@ -70,386 +61,787 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Main Navbar */}
-      <header className="bg-[#2874f0] sticky top-0 z-50 shadow-md">
-        <div className="max-w-[1400px] mx-auto px-4 py-2.5">
-          <div className="flex items-center gap-4">
-            {/* Mobile Menu Button */}
-            <button
-              className="lg:hidden text-white p-1"
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-            >
-              {showMobileMenu ? <FiX size={24} /> : <FiMenu size={24} />}
-            </button>
+      {/* ── Top Blue Bar ─────────────────────────────── */}
+      <header style={{ background: '#2874f0', position: 'sticky', top: 0, zIndex: 1000, boxShadow: '0 1px 6px rgba(0,0,0,.2)' }}>
+        <div style={{ maxWidth: 1300, margin: '0 auto', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
 
-            {/* Logo */}
-            <Link href="/" className="flex flex-col items-center shrink-0" id="navbar-logo">
-              <span className="text-white text-xl font-bold italic tracking-tight">Flipkart</span>
-              <span className="flex items-center gap-1 text-[11px] -mt-0.5" style={{ color: 'rgba(255,255,255,0.8)' }}>
-                Explore
-                <span className="text-[#ffe500] font-medium">Plus</span>
-                <span className="text-[10px]">🛡️</span>
+          {/* Logo */}
+          <Link href="/" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 90, marginRight: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <svg width="22" height="22" viewBox="0 0 46 46" fill="none">
+                <rect width="46" height="46" rx="4" fill="#FFE500"/>
+                <path d="M10 14h26v5H10zM10 22h18v5H10zM10 30h22v5H10z" fill="#2874F0"/>
+              </svg>
+              <span style={{ color: '#fff', fontSize: 22, fontWeight: 700, fontStyle: 'italic', letterSpacing: '-0.5px', fontFamily: 'sans-serif', lineHeight: 1 }}>
+                Flipkart
               </span>
-            </Link>
-
-            {/* Search Bar */}
-            <div ref={searchRef} className="flex-1 max-w-[570px] relative hidden sm:block">
-              <form onSubmit={handleSearch} className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  onFocus={() => searchQuery && setShowSuggestions(true)}
-                  placeholder="Search for Products, Brands and More"
-                  className="w-full py-2 px-4 pr-12 rounded-sm text-sm bg-white text-gray-800 outline-none placeholder:text-gray-400"
-                  id="navbar-search"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-0 top-0 h-full px-3.5 text-[#2874f0]"
-                >
-                  <FiSearch size={20} />
-                </button>
-              </form>
-
-              {/* Search Suggestions */}
-              {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 w-full bg-white shadow-lg border mt-0.5 rounded-sm z-50 max-h-[400px] overflow-y-auto">
-                  {suggestions.map((s) => (
-                    <button
-                      key={s.id}
-                      className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-gray-50 text-sm border-b border-gray-100"
-                      onClick={() => handleSuggestionClick(s)}
-                    >
-                      <FiSearch size={14} className="text-gray-400 shrink-0" />
-                      <div>
-                        <p className="text-gray-800">{s.text}</p>
-                        {s.brand && <p className="text-xs text-gray-400">in {s.brand}</p>}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
-
-            {/* Right Section */}
-            <div className="flex items-center gap-1 sm:gap-3 ml-auto">
-              {/* Login / User Menu */}
-              <div ref={userMenuRef} className="relative">
-                {isAuthenticated ? (
-                  <button
-                    className="flex items-center gap-1.5 text-white px-3 py-1.5 hover:bg-white/10 rounded-sm transition-colors"
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                    id="navbar-user-menu"
-                  >
-                    <FiUser size={18} />
-                    <span className="hidden md:inline text-sm font-medium max-w-[100px] truncate">
-                      {user?.name || 'Account'}
-                    </span>
-                    <FiChevronDown size={14} className={`transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
-                  </button>
-                ) : (
-                  <Link
-                    href="/login"
-                    className="bg-white text-[#2874f0] px-8 py-1.5 text-sm font-semibold rounded-sm hover:bg-gray-50 transition-colors hidden sm:block"
-                    id="navbar-login-btn"
-                  >
-                    Login
-                  </Link>
-                )}
-
-                {/* User Dropdown */}
-                {showUserMenu && isAuthenticated && (
-                  <div className="absolute right-0 top-full mt-1.5 w-[230px] bg-white shadow-xl rounded-sm border z-50 animate-fade-in-up">
-                    <div className="p-3 border-b bg-gray-50">
-                      <p className="text-sm font-medium text-gray-800">{user?.name}</p>
-                      <p className="text-xs text-gray-500">{user?.email}</p>
-                      {user?.plus_tier !== 'none' && (
-                        <span className="inline-flex items-center gap-1 mt-1 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
-                          <FiStar size={10} /> Plus {user?.plus_tier}
-                        </span>
-                      )}
-                    </div>
-                    <Link
-                      href="/account"
-                      className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-[#f5faff] border-b"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      <FiUser size={16} /> My Profile
-                    </Link>
-                    <Link
-                      href="/orders"
-                      className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-[#f5faff] border-b"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      <FiPackage size={16} /> Orders
-                    </Link>
-                    <Link
-                      href="/wishlist"
-                      className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-[#f5faff] border-b"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      <FiHeart size={16} /> Wishlist
-                    </Link>
-                    <Link
-                      href="/flipkart-plus"
-                      className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-[#f5faff] border-b"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      <FiStar size={16} /> Flipkart Plus
-                    </Link>
-                    <button
-                      className="flex items-center gap-3 w-full px-4 py-3 text-sm text-red-500 hover:bg-red-50"
-                      onClick={() => { logout(); setShowUserMenu(false); router.push('/'); }}
-                    >
-                      <FiLogOut size={16} /> Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Become a Seller */}
-              <span className="hidden lg:block text-white text-sm font-medium cursor-pointer hover:bg-white/10 px-3 py-1.5 rounded-sm transition-colors">
-                Become a Seller
-              </span>
-
-              {/* More */}
-              <div className="hidden lg:block relative group">
-                <span className="flex items-center gap-1 text-white text-sm font-medium cursor-pointer px-3 py-1.5 rounded-sm transition-colors" style={{ backgroundColor: 'transparent' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  More <FiChevronDown size={14} />
-                </span>
-                <div className="absolute right-0 top-full w-[220px] bg-white shadow-xl border rounded-sm z-50 hidden group-hover:block">
-                  <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-[#f5faff] border-b border-gray-100">
-                    🔔 Notification Preferences
-                  </button>
-                  <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-[#f5faff] border-b border-gray-100">
-                    💬 24x7 Customer Care
-                  </button>
-                  <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-[#f5faff] border-b border-gray-100">
-                    📢 Advertise
-                  </button>
-                  <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-[#f5faff]">
-                    📱 Download App
-                  </button>
-                </div>
-              </div>
-
-              {/* Cart */}
-              <Link
-                href="/cart"
-                className="flex items-center gap-1.5 text-white px-3 py-1.5 hover:bg-white/10 rounded-sm transition-colors relative"
-                id="navbar-cart"
-              >
-                <div className="relative">
-                  <FiShoppingCart size={20} />
-                  {cartCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-[#ff6161] text-white text-[10px] font-bold w-[18px] h-[18px] rounded-full flex items-center justify-center animate-bounce-in">
-                      {cartCount > 9 ? '9+' : cartCount}
-                    </span>
-                  )}
-                </div>
-                <span className="hidden sm:inline text-sm font-medium">Cart</span>
-              </Link>
-
-              {/* Mobile Login */}
-              {!isAuthenticated && (
-                <Link href="/login" className="sm:hidden text-white">
-                  <FiUser size={20} />
-                </Link>
-              )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginLeft: 26, marginTop: -2 }}>
+              <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontStyle: 'italic' }}>Explore</span>
+              <span style={{ color: '#ffe500', fontSize: 11, fontWeight: 600, fontStyle: 'italic' }}>Plus</span>
+              <svg width="10" height="10" viewBox="0 0 10 10" style={{ marginLeft: 1 }}>
+                <polygon points="5,0 6.2,3.5 10,3.5 7.1,5.7 8.1,9 5,7 1.9,9 2.9,5.7 0,3.5 3.8,3.5" fill="#ffe500"/>
+              </svg>
             </div>
-          </div>
+          </Link>
 
-          {/* Mobile Search */}
-          <div className="sm:hidden mt-2">
-            <form onSubmit={handleSearch} className="relative">
+          {/* Search Bar */}
+          <div ref={searchRef} style={{ flex: 1, maxWidth: 590, position: 'relative' }}>
+            <form onSubmit={handleSearch} style={{ display: 'flex', background: '#fff', borderRadius: 2, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.1)' }}>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={handleSearchChange}
+                onFocus={() => searchQuery && setShowSuggestions(true)}
                 placeholder="Search for Products, Brands and More"
-                className="w-full py-2 px-4 pr-12 rounded-sm text-sm bg-white text-gray-800 outline-none"
+                style={{ flex: 1, border: 'none', outline: 'none', padding: '10px 16px', fontSize: 14, color: '#212121', background: 'transparent', minWidth: 0 }}
               />
-              <button type="submit" className="absolute right-0 top-0 h-full px-3.5 text-[#2874f0]">
-                <FiSearch size={18} />
+              <button type="submit" style={{ background: 'transparent', border: 'none', padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2874f0' }}>
+                <svg width="20" height="20" fill="none" stroke="#2874f0" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/>
+                </svg>
               </button>
             </form>
+
+            {/* Suggestions Dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,.15)', zIndex: 200, borderTop: '1px solid #f0f0f0' }}>
+                {suggestions.map((s) => (
+                  <button key={s.id} onClick={() => handleSuggestionClick(s)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '10px 16px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #f8f8f8' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    <svg width="16" height="16" fill="none" stroke="#878787" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+                    <span style={{ fontSize: 14, color: '#212121' }}>{s.text}</span>
+                    {s.brand && <span style={{ fontSize: 12, color: '#878787', marginLeft: 4 }}>in {s.brand}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      </header>
 
-      {/* Sub Navigation - Category Bar */}
-      <SubNav />
+          {/* Right Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
 
-      {/* Mobile Menu Overlay */}
-      {showMobileMenu && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileMenu(false)} />
-          <div className="absolute left-0 top-0 w-[280px] h-full bg-white shadow-xl animate-slide-in overflow-y-auto">
-            <div className="p-4 bg-[#2874f0]">
+            {/* Login / My Account */}
+            <div ref={userMenuRef} style={{ position: 'relative' }}>
               {isAuthenticated ? (
-                <div className="text-white">
-                  <p className="font-medium">{user?.name}</p>
-                  <p className="text-xs opacity-80">{user?.email}</p>
-                </div>
+                <button
+                  onClick={() => setShowUserMenu(v => !v)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#fff', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 12px', fontSize: 15, fontWeight: 600, borderRadius: 2, whiteSpace: 'nowrap' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.13)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  {user?.name?.split(' ')[0] || 'Account'}
+                  <svg width="14" height="14" fill="none" stroke="#fff" strokeWidth="2.5" viewBox="0 0 24 24" style={{ transform: showUserMenu ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </button>
               ) : (
-                <Link href="/login" className="text-white font-medium" onClick={() => setShowMobileMenu(false)}>
-                  Login & Signup
+                <Link href="/login"
+                  style={{ display: 'inline-block', background: '#fff', color: '#2874f0', fontWeight: 700, fontSize: 15, padding: '6px 40px', borderRadius: 2, textDecoration: 'none', whiteSpace: 'nowrap', letterSpacing: 0.2 }}
+                >
+                  Login
                 </Link>
               )}
-            </div>
-            <nav className="py-2">
-              {[
-                { href: '/', label: 'Home', icon: '🏠' },
-                { href: '/products', label: 'All Products', icon: '📦' },
-                { href: '/cart', label: 'My Cart', icon: '🛒' },
-                { href: '/orders', label: 'My Orders', icon: '📋' },
-                { href: '/wishlist', label: 'My Wishlist', icon: '❤️' },
-                { href: '/flipkart-plus', label: 'Flipkart Plus', icon: '⭐' },
-              ].map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  <span>{item.icon}</span>
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
 
-// Sub Navigation Component - matches real Flipkart
-function SubNav() {
-  const navItems = [
-    {
-      name: 'Electronics',
-      slug: 'electronics',
-      hasDropdown: true,
-      links: [
-        { label: 'Mobiles', slug: 'mobiles' },
-        { label: 'Laptops', slug: 'electronics' },
-        { label: 'Tablets', slug: 'electronics' },
-        { label: 'Headphones', slug: 'electronics' },
-        { label: 'Speakers', slug: 'electronics' },
-        { label: 'Smart TVs', slug: 'electronics' },
-      ],
-    },
-    {
-      name: 'TVs & Appliances',
-      slug: 'appliances',
-      hasDropdown: true,
-      links: [
-        { label: 'Televisions', slug: 'electronics' },
-        { label: 'Washing Machines', slug: 'appliances' },
-        { label: 'Air Conditioners', slug: 'appliances' },
-        { label: 'Refrigerators', slug: 'appliances' },
-        { label: 'Kitchen Appliances', slug: 'appliances' },
-      ],
-    },
-    {
-      name: 'Men',
-      slug: 'fashion-men',
-      hasDropdown: true,
-      links: [
-        { label: 'Shirts', slug: 'fashion-men' },
-        { label: 'Jeans', slug: 'fashion-men' },
-        { label: 'Shoes', slug: 'fashion-men' },
-        { label: 'Watches', slug: 'fashion-men' },
-        { label: 'T-Shirts', slug: 'fashion-men' },
-      ],
-    },
-    {
-      name: 'Women',
-      slug: 'fashion-women',
-      hasDropdown: true,
-      links: [
-        { label: 'Kurtas & Kurtis', slug: 'fashion-women' },
-        { label: 'Sarees', slug: 'fashion-women' },
-        { label: 'Dresses', slug: 'fashion-women' },
-        { label: 'Handbags', slug: 'fashion-women' },
-        { label: 'Watches', slug: 'fashion-women' },
-      ],
-    },
-    {
-      name: 'Baby & Kids',
-      slug: 'toys-baby',
-      hasDropdown: true,
-      links: [
-        { label: 'Toys', slug: 'toys-baby' },
-        { label: 'Board Games', slug: 'toys-baby' },
-        { label: 'Baby Care', slug: 'toys-baby' },
-        { label: 'LEGO Sets', slug: 'toys-baby' },
-      ],
-    },
-    {
-      name: 'Home & Furniture',
-      slug: 'home-furniture',
-      hasDropdown: true,
-      links: [
-        { label: 'Bedsheets', slug: 'home-furniture' },
-        { label: 'Curtains', slug: 'home-furniture' },
-        { label: 'Furniture', slug: 'home-furniture' },
-        { label: 'Mattresses', slug: 'home-furniture' },
-      ],
-    },
-    {
-      name: 'Sports, Books & More',
-      slug: '',
-      hasDropdown: false,
-    },
-    {
-      name: 'Flights',
-      slug: '',
-      hasDropdown: false,
-    },
-    {
-      name: 'Offer Zone',
-      slug: 'products',
-      hasDropdown: false,
-    },
-  ];
-
-  return (
-    <nav className="shadow-sm border-b hidden md:block" style={{ background: '#fff' }}>
-      <div className="max-w-[1400px] mx-auto">
-        <div className="flex items-center justify-between px-2 overflow-x-auto no-scrollbar">
-          {navItems.map((item) => (
-            <div key={item.name} className="relative group">
-              <Link
-                href={item.slug ? `/products?category=${item.slug}` : '/products'}
-                className="flex items-center gap-0.5 py-3 px-3 text-[13px] font-medium text-gray-800 whitespace-nowrap transition-colors hover:text-[#2874f0]"
-              >
-                {item.name}
-                {item.hasDropdown && <FiChevronDown size={12} className="text-gray-500" />}
-              </Link>
-
-              {/* Dropdown Mega Menu */}
-              {item.hasDropdown && item.links && (
-                <div className="absolute left-0 top-full w-[200px] bg-white shadow-xl border rounded-sm z-50 hidden group-hover:block">
-                  {item.links.map((link, idx) => (
-                    <Link
-                      key={idx}
-                      href={`/products?category=${link.slug}`}
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-[#f5faff] hover:text-[#2874f0] border-b border-gray-50"
+              {/* User Dropdown */}
+              {showUserMenu && isAuthenticated && (
+                <div style={{ position: 'absolute', right: 0, top: '110%', background: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,.18)', zIndex: 300, minWidth: 230, borderRadius: 2 }}>
+                  <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', background: '#fafafa' }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#212121' }}>{user?.name}</p>
+                    <p style={{ fontSize: 12, color: '#878787', marginTop: 2 }}>{user?.email}</p>
+                  </div>
+                  {[
+                    { href: '/account', icon: '👤', label: 'My Profile' },
+                    { href: '/account', icon: '🪙', label: 'SuperCoin Zone' },
+                    { href: '/flipkart-plus', icon: '✨', label: 'Flipkart Plus Zone' },
+                    { href: '/orders', icon: '📦', label: 'Orders' },
+                    { href: '/wishlist', icon: '❤️', label: 'Wishlist', badge: null },
+                    { href: '/', icon: '🏷️', label: 'Coupons' },
+                    { href: '/', icon: '🎁', label: 'Gift Cards' },
+                    { href: '/', icon: '🔔', label: 'Notifications' },
+                  ].map(item => (
+                    <Link key={item.label} href={item.href} onClick={() => setShowUserMenu(false)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', fontSize: 13, color: '#212121', textDecoration: 'none', borderBottom: '1px solid #f9f9f9' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f5faff'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'none'}
                     >
-                      {link.label}
+                      <span>{item.icon}</span>{item.label}
                     </Link>
+                  ))}
+                  <button onClick={() => { logout(); setShowUserMenu(false); router.push('/'); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 16px', fontSize: 13, color: '#ff6161', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#fff0f0'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>🚪</span>Logout
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Become a Seller */}
+            <button style={{ color: '#fff', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 12px', fontSize: 15, fontWeight: 600, borderRadius: 2, whiteSpace: 'nowrap' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.13)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >
+              Become a Seller
+            </button>
+
+            {/* More */}
+            <div ref={moreMenuRef} style={{ position: 'relative' }}>
+              <button onClick={() => setShowMoreMenu(v => !v)}
+                style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#fff', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 12px', fontSize: 15, fontWeight: 600, borderRadius: 2 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.13)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              >
+                More
+                <svg width="14" height="14" fill="none" stroke="#fff" strokeWidth="2.5" viewBox="0 0 24 24" style={{ transform: showMoreMenu ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </button>
+              {showMoreMenu && (
+                <div style={{ position: 'absolute', right: 0, top: '110%', background: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,.18)', zIndex: 300, minWidth: 200, borderRadius: 2 }}>
+                  {[
+                    { icon: '🔔', label: 'Notification Preferences' },
+                    { icon: '🎧', label: '24x7 Customer Care' },
+                    { icon: '📢', label: 'Advertise' },
+                    { icon: '📱', label: 'Download App' },
+                  ].map(item => (
+                    <button key={item.label}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '11px 16px', fontSize: 13, color: '#212121', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid #f9f9f9', textAlign: 'left' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                    >
+                      <span>{item.icon}</span>{item.label}
+                    </button>
                   ))}
                 </div>
               )}
             </div>
-          ))}
+
+            {/* Cart */}
+            <Link href="/cart"
+              style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#fff', textDecoration: 'none', padding: '6px 12px', fontSize: 15, fontWeight: 600, borderRadius: 2, position: 'relative' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.13)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >
+              <span style={{ position: 'relative' }}>
+                <svg width="22" height="22" fill="none" stroke="#fff" strokeWidth="1.8" viewBox="0 0 24 24">
+                  <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+                </svg>
+                {cartCount > 0 && (
+                  <span style={{ position: 'absolute', top: -8, right: -8, background: '#ff6161', color: '#fff', fontSize: 10, fontWeight: 700, minWidth: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px' }}>
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
+              </span>
+              Cart
+            </Link>
+          </div>
         </div>
+      </header>
+
+      {/* ── Sub Nav / Category Bar ────────────────────── */}
+      <SubNav />
+    </>
+  );
+}
+
+/* ────────────────────────────────────────────────────────
+   SubNav – Full-width Mega Menu Dropdowns
+   ──────────────────────────────────────────────────────── */
+function SubNav() {
+  const [activeMenu, setActiveMenu] = useState(null);
+
+  const navItems = [
+    {
+      name: 'Electronics', slug: 'electronics',
+      mega: [
+        {
+          heading: 'Mobiles',
+          links: [
+            { label: 'Mi', slug: 'electronics' },
+            { label: 'Realme', slug: 'electronics' },
+            { label: 'Samsung', slug: 'electronics' },
+            { label: 'Infinix', slug: 'electronics' },
+            { label: 'OPPO', slug: 'electronics' },
+            { label: 'Apple', slug: 'electronics' },
+            { label: 'Vivo', slug: 'electronics' },
+            { label: 'Honor', slug: 'electronics' },
+            { label: 'Asus', slug: 'electronics' },
+            { label: 'POCO', slug: 'electronics' },
+          ],
+        },
+        {
+          heading: 'Mobile Accessories',
+          links: [
+            { label: 'Mobile Cases', slug: 'electronics' },
+            { label: 'Headphones & Headsets', slug: 'electronics' },
+            { label: 'Power Banks', slug: 'electronics' },
+            { label: 'Screenguards', slug: 'electronics' },
+            { label: 'Smart Headphones', slug: 'electronics' },
+            { label: 'Mobile Cables', slug: 'electronics' },
+            { label: 'Mobile Chargers', slug: 'electronics' },
+            { label: 'Mobile Holders', slug: 'electronics' },
+          ],
+        },
+        {
+          heading: 'Smart Wearable Tech',
+          links: [
+            { label: 'Smart Watches', slug: 'electronics' },
+            { label: 'Smart Bands', slug: 'electronics' },
+            { label: 'Smart Glasses', slug: 'electronics' },
+          ],
+        },
+        {
+          heading: 'Laptops',
+          links: [
+            { label: 'Gaming Laptops', slug: 'electronics' },
+            { label: 'Desktop PCs', slug: 'electronics' },
+            { label: 'Laptop Accessories', slug: 'electronics' },
+            { label: 'Printers & Ink', slug: 'electronics' },
+            { label: 'Storage', slug: 'electronics' },
+          ],
+        },
+        {
+          heading: 'Camera & Accessories',
+          links: [
+            { label: 'DSLR & Mirrorless', slug: 'electronics' },
+            { label: 'Compact & Bridge Cameras', slug: 'electronics' },
+            { label: 'Sports & Action', slug: 'electronics' },
+            { label: 'Camera Accessories', slug: 'electronics' },
+          ],
+        },
+        {
+          heading: 'Speakers & Audio',
+          links: [
+            { label: 'Bluetooth Speakers', slug: 'electronics' },
+            { label: 'Home Audio Speakers', slug: 'electronics' },
+            { label: 'Soundbars', slug: 'electronics' },
+            { label: 'Home Theatres', slug: 'electronics' },
+          ],
+        },
+        {
+          heading: 'Featured',
+          isFeatured: true,
+          links: [
+            { label: 'Google Assistant Store', slug: 'electronics' },
+            { label: 'Laptops on Buyback Guarantee', slug: 'electronics' },
+            { label: 'Flipkart SmartBuy', slug: 'electronics' },
+            { label: 'Li-Polymer Power Banks', slug: 'electronics' },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'TVs & Appliances', slug: 'appliances',
+      mega: [
+        {
+          heading: 'Television',
+          links: [
+            { label: 'OLED TVs', slug: 'appliances' },
+            { label: 'QLED TVs', slug: 'appliances' },
+            { label: '4K Ultra HD TVs', slug: 'appliances' },
+            { label: 'Full HD TVs', slug: 'appliances' },
+            { label: 'HD Ready TVs', slug: 'appliances' },
+            { label: 'Android TVs', slug: 'appliances' },
+            { label: 'Smart TVs', slug: 'appliances' },
+          ],
+        },
+        {
+          heading: 'Washing Machine',
+          links: [
+            { label: 'Fully Automatic Front Load', slug: 'appliances' },
+            { label: 'Fully Automatic Top Load', slug: 'appliances' },
+            { label: 'Semi Automatic', slug: 'appliances' },
+            { label: 'Dryers', slug: 'appliances' },
+          ],
+        },
+        {
+          heading: 'Air Conditioners',
+          links: [
+            { label: 'Inverter ACs', slug: 'appliances' },
+            { label: 'Split ACs', slug: 'appliances' },
+            { label: 'Window ACs', slug: 'appliances' },
+            { label: 'Portable ACs', slug: 'appliances' },
+          ],
+        },
+        {
+          heading: 'Refrigerators',
+          links: [
+            { label: 'Single Door', slug: 'appliances' },
+            { label: 'Double Door', slug: 'appliances' },
+            { label: 'Triple Door', slug: 'appliances' },
+            { label: 'Side By Side', slug: 'appliances' },
+            { label: 'Mini Refrigerators', slug: 'appliances' },
+          ],
+        },
+        {
+          heading: 'Kitchen Appliances',
+          links: [
+            { label: 'Microwave Ovens', slug: 'appliances' },
+            { label: 'OTGs', slug: 'appliances' },
+            { label: 'Dishwashers', slug: 'appliances' },
+            { label: 'Chimneys', slug: 'appliances' },
+            { label: 'Juicer/Mixer/Grinder', slug: 'appliances' },
+            { label: 'Electric Cookers', slug: 'appliances' },
+            { label: 'Induction Cooktops', slug: 'appliances' },
+          ],
+        },
+        {
+          heading: 'Small Home Appliances',
+          links: [
+            { label: 'Air Purifiers', slug: 'appliances' },
+            { label: 'Vacuum Cleaners', slug: 'appliances' },
+            { label: '   Irons', slug: 'appliances' },
+            { label: 'Water Purifiers', slug: 'appliances' },
+            { label: 'Fans', slug: 'appliances' },
+            { label: 'Geysers', slug: 'appliances' },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Men', slug: 'fashion-men',
+      mega: [
+        {
+          heading: 'Top Wear',
+          links: [
+            { label: "Men's T-Shirts", slug: 'fashion-men' },
+            { label: 'Casual Shirts', slug: 'fashion-men' },
+            { label: 'Formal Shirts', slug: 'fashion-men' },
+            { label: 'Sweatshirts', slug: 'fashion-men' },
+            { label: 'Sweaters', slug: 'fashion-men' },
+            { label: 'Jackets', slug: 'fashion-men' },
+            { label: 'Blazers & Coats', slug: 'fashion-men' },
+            { label: 'Suits', slug: 'fashion-men' },
+            { label: 'Rain Jackets', slug: 'fashion-men' },
+          ],
+        },
+        {
+          heading: 'Bottom Wear',
+          links: [
+            { label: 'Jeans', slug: 'fashion-men' },
+            { label: 'Casual Trousers', slug: 'fashion-men' },
+            { label: 'Formal Trousers', slug: 'fashion-men' },
+            { label: 'Shorts', slug: 'fashion-men' },
+            { label: 'Track Pants & Joggers', slug: 'fashion-men' },
+            { label: 'Cargos', slug: 'fashion-men' },
+            { label: 'Three Fourths', slug: 'fashion-men' },
+          ],
+        },
+        {
+          heading: 'Innerwear & Sleepwear',
+          links: [
+            { label: 'Briefs & Trunks', slug: 'fashion-men' },
+            { label: 'Boxers', slug: 'fashion-men' },
+            { label: 'Vests', slug: 'fashion-men' },
+            { label: 'Sleepwear & Loungewear', slug: 'fashion-men' },
+            { label: 'Thermals', slug: 'fashion-men' },
+          ],
+        },
+        {
+          heading: 'Footwear',
+          links: [
+            { label: 'Casual Shoes', slug: 'fashion-men' },
+            { label: 'Sports Shoes', slug: 'fashion-men' },
+            { label: 'Formal Shoes', slug: 'fashion-men' },
+            { label: 'Sneakers', slug: 'fashion-men' },
+            { label: 'Sandals & Floaters', slug: 'fashion-men' },
+            { label: 'Flip-Flops', slug: 'fashion-men' },
+            { label: 'Loafers', slug: 'fashion-men' },
+            { label: 'Boots', slug: 'fashion-men' },
+          ],
+        },
+        {
+          heading: 'Watches & Accessories',
+          links: [
+            { label: 'Watches', slug: 'fashion-men' },
+            { label: 'Wallets', slug: 'fashion-men' },
+            { label: 'Belts', slug: 'fashion-men' },
+            { label: 'Sunglasses', slug: 'fashion-men' },
+            { label: 'Caps & Hats', slug: 'fashion-men' },
+            { label: 'Bags & Backpacks', slug: 'fashion-men' },
+            { label: 'Ties, Cufflinks & Pocket Squares', slug: 'fashion-men' },
+          ],
+        },
+        {
+          heading: 'Ethnic Wear',
+          links: [
+            { label: "Men's Kurtas", slug: 'fashion-men' },
+            { label: 'Ethnic Sets', slug: 'fashion-men' },
+            { label: 'Sherwanis', slug: 'fashion-men' },
+            { label: 'Nehru Jackets', slug: 'fashion-men' },
+            { label: 'Dhotis & Mundus', slug: 'fashion-men' },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Women', slug: 'fashion-women',
+      mega: [
+        {
+          heading: 'Indian & Fusion Wear',
+          links: [
+            { label: 'Kurtas & Kurtis', slug: 'fashion-women' },
+            { label: 'Sarees', slug: 'fashion-women' },
+            { label: 'Ethnic Wear', slug: 'fashion-women' },
+            { label: 'Lehengas', slug: 'fashion-women' },
+            { label: 'Salwar Suits', slug: 'fashion-women' },
+            { label: 'Blouses', slug: 'fashion-women' },
+            { label: 'Dress Materials', slug: 'fashion-women' },
+            { label: 'Leggings, Salwars & Churidars', slug: 'fashion-women' },
+            { label: 'Skirts & Palazzos', slug: 'fashion-women' },
+            { label: 'Dupattas & Shawls', slug: 'fashion-women' },
+          ],
+        },
+        {
+          heading: 'Western Wear',
+          links: [
+            { label: 'Dresses', slug: 'fashion-women' },
+            { label: 'Tops', slug: 'fashion-women' },
+            { label: 'T-Shirts', slug: 'fashion-women' },
+            { label: 'Jeans', slug: 'fashion-women' },
+            { label: 'Trousers & Capris', slug: 'fashion-women' },
+            { label: 'Shorts & Skirts', slug: 'fashion-women' },
+            { label: 'Jumpsuits', slug: 'fashion-women' },
+            { label: 'Shrugs', slug: 'fashion-women' },
+            { label: 'Sweaters & Sweatshirts', slug: 'fashion-women' },
+            { label: 'Jackets & Coats', slug: 'fashion-women' },
+          ],
+        },
+        {
+          heading: 'Footwear',
+          links: [
+            { label: 'Flats', slug: 'fashion-women' },
+            { label: 'Casual Shoes', slug: 'fashion-women' },
+            { label: 'Heels', slug: 'fashion-women' },
+            { label: 'Boots', slug: 'fashion-women' },
+            { label: 'Sports Shoes & Floaters', slug: 'fashion-women' },
+          ],
+        },
+        {
+          heading: 'Jewellery',
+          links: [
+            { label: 'Fashion Jewellery', slug: 'fashion-women' },
+            { label: 'Fine Jewellery', slug: 'fashion-women' },
+            { label: 'Earrings', slug: 'fashion-women' },
+            { label: 'Rings', slug: 'fashion-women' },
+          ],
+        },
+        {
+          heading: 'Beauty & Personal Care',
+          links: [
+            { label: 'Make Up', slug: 'fashion-women' },
+            { label: 'Skincare', slug: 'fashion-women' },
+            { label: 'Hair Care', slug: 'fashion-women' },
+            { label: 'Fragrances', slug: 'fashion-women' },
+            { label: 'Lipsticks', slug: 'fashion-women' },
+          ],
+        },
+        {
+          heading: 'Handbags & Accessories',
+          links: [
+            { label: 'Handbags', slug: 'fashion-women' },
+            { label: 'Clutches', slug: 'fashion-women' },
+            { label: 'Watches', slug: 'fashion-women' },
+            { label: 'Sunglasses & Frames', slug: 'fashion-women' },
+            { label: 'Belts', slug: 'fashion-women' },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Baby & Kids', slug: 'toys-baby',
+      mega: [
+        {
+          heading: "Boys' Clothing",
+          links: [
+            { label: 'T-Shirts', slug: 'toys-baby' },
+            { label: 'Shirts', slug: 'toys-baby' },
+            { label: 'Shorts', slug: 'toys-baby' },
+            { label: 'Jeans', slug: 'toys-baby' },
+            { label: 'Trousers', slug: 'toys-baby' },
+            { label: 'Clothing Sets', slug: 'toys-baby' },
+            { label: 'Ethnic Wear', slug: 'toys-baby' },
+          ],
+        },
+        {
+          heading: "Girls' Clothing",
+          links: [
+            { label: 'Dresses', slug: 'toys-baby' },
+            { label: 'Tops', slug: 'toys-baby' },
+            { label: 'T-Shirts', slug: 'toys-baby' },
+            { label: 'Clothing Sets', slug: 'toys-baby' },
+            { label: 'Lehenga Cholis', slug: 'toys-baby' },
+            { label: 'Kurta Sets', slug: 'toys-baby' },
+          ],
+        },
+        {
+          heading: "Kids' Footwear",
+          links: [
+            { label: "Boys' Footwear", slug: 'toys-baby' },
+            { label: "Girls' Footwear", slug: 'toys-baby' },
+            { label: 'Infant Footwear', slug: 'toys-baby' },
+          ],
+        },
+        {
+          heading: 'Toys',
+          links: [
+            { label: 'Remote Control Toys', slug: 'toys-baby' },
+            { label: 'Educational Toys', slug: 'toys-baby' },
+            { label: 'Soft Toys', slug: 'toys-baby' },
+            { label: 'Action Figures', slug: 'toys-baby' },
+            { label: 'Board Games', slug: 'toys-baby' },
+            { label: 'Puzzles', slug: 'toys-baby' },
+            { label: 'Musical Toys', slug: 'toys-baby' },
+          ],
+        },
+        {
+          heading: 'Baby Care',
+          links: [
+            { label: 'Diapers', slug: 'toys-baby' },
+            { label: 'Wipes', slug: 'toys-baby' },
+            { label: 'Baby Bath', slug: 'toys-baby' },
+            { label: 'Baby Grooming', slug: 'toys-baby' },
+            { label: 'Baby Food', slug: 'toys-baby' },
+            { label: 'Baby Gear', slug: 'toys-baby' },
+          ],
+        },
+        {
+          heading: 'Featured Brands',
+          isFeatured: true,
+          links: [
+            { label: 'Miss & Chief', slug: 'toys-baby' },
+            { label: 'Barbie', slug: 'toys-baby' },
+            { label: 'Disney', slug: 'toys-baby' },
+            { label: 'Lego', slug: 'toys-baby' },
+            { label: 'Funskool', slug: 'toys-baby' },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Home & Furniture', slug: 'home-furniture',
+      mega: [
+        {
+          heading: 'Kitchen, Cookware & Serveware',
+          links: [
+            { label: 'Pans', slug: 'home-furniture' },
+            { label: 'Tawas', slug: 'home-furniture' },
+            { label: 'Pressure Cookers', slug: 'home-furniture' },
+            { label: 'Kitchen Tools', slug: 'home-furniture' },
+            { label: 'Gas Stoves', slug: 'home-furniture' },
+            { label: 'Coffee Mugs', slug: 'home-furniture' },
+            { label: 'Dinner Set', slug: 'home-furniture' },
+            { label: 'Barware', slug: 'home-furniture' },
+          ],
+        },
+        {
+          heading: 'Bed Room Furniture',
+          links: [
+            { label: 'Beds', slug: 'home-furniture' },
+            { label: 'Mattresses', slug: 'home-furniture' },
+            { label: 'Wardrobes', slug: 'home-furniture' },
+            { label: 'Bedsheets', slug: 'home-furniture' },
+            { label: 'Curtains', slug: 'home-furniture' },
+            { label: 'Cushions & Pillows', slug: 'home-furniture' },
+            { label: 'Blankets', slug: 'home-furniture' },
+          ],
+        },
+        {
+          heading: 'Living Room Furniture',
+          links: [
+            { label: 'Sofas', slug: 'home-furniture' },
+            { label: 'Sofa Beds', slug: 'home-furniture' },
+            { label: 'TV Units', slug: 'home-furniture' },
+            { label: 'Dining Tables & Chairs', slug: 'home-furniture' },
+            { label: 'Coffee Tables', slug: 'home-furniture' },
+            { label: 'Shoe Racks', slug: 'home-furniture' },
+          ],
+        },
+        {
+          heading: 'Home Decor',
+          links: [
+            { label: 'Paintings', slug: 'home-furniture' },
+            { label: 'Clocks', slug: 'home-furniture' },
+            { label: 'Wall Shelves', slug: 'home-furniture' },
+            { label: 'Stickers', slug: 'home-furniture' },
+            { label: 'Showpieces & Figurines', slug: 'home-furniture' },
+          ],
+        },
+        {
+          heading: 'Home Lighting',
+          links: [
+            { label: 'Bulbs', slug: 'home-furniture' },
+            { label: 'Wall Lamp', slug: 'home-furniture' },
+            { label: 'Table Lamp', slug: 'home-furniture' },
+            { label: 'Ceiling Lamp', slug: 'home-furniture' },
+            { label: 'Emergency Lights', slug: 'home-furniture' },
+          ],
+        },
+        {
+          heading: 'Smart Home Automation',
+          links: [
+            { label: 'Smart Security System', slug: 'home-furniture' },
+            { label: 'Smart Door Locks', slug: 'home-furniture' },
+          ],
+        },
+        {
+          heading: 'Home Improvement',
+          links: [
+            { label: 'Tools & Measuring Equipment', slug: 'home-furniture' },
+            { label: 'Home Utilities & Organizers', slug: 'home-furniture' },
+            { label: 'Lawn & Gardening', slug: 'home-furniture' },
+            { label: 'Bathroom & Kitchen Fittings', slug: 'home-furniture' },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Sports, Books & More', slug: '',
+      mega: [
+        {
+          heading: 'Sports',
+          links: [
+            { label: 'Cricket', slug: '' },
+            { label: 'Badminton', slug: '' },
+            { label: 'Cycling', slug: '' },
+            { label: 'Football', slug: '' },
+            { label: 'Fitness Gadgets', slug: '' },
+            { label: 'Gym Equipment', slug: '' },
+            { label: 'Yoga & Accessories', slug: '' },
+          ],
+        },
+        {
+          heading: 'Books',
+          links: [
+            { label: 'Entrance Exams', slug: '' },
+            { label: 'Academic & Professional', slug: '' },
+            { label: 'Fiction', slug: '' },
+            { label: 'Non-Fiction', slug: '' },
+            { label: 'Children Books', slug: '' },
+          ],
+        },
+        {
+          heading: 'Music',
+          links: [
+            { label: 'Musical Instruments', slug: '' },
+            { label: 'Guitar', slug: '' },
+            { label: 'Keyboard', slug: '' },
+          ],
+        },
+        {
+          heading: 'Stationery',
+          links: [
+            { label: 'Pens & Writing', slug: '' },
+            { label: 'Art & Craft Supplies', slug: '' },
+            { label: 'School Supplies', slug: '' },
+            { label: 'Office Supplies', slug: '' },
+          ],
+        },
+        {
+          heading: 'Gaming',
+          links: [
+            { label: 'Gaming Consoles', slug: '' },
+            { label: 'Gaming Titles', slug: '' },
+            { label: 'Gaming Accessories', slug: '' },
+          ],
+        },
+      ],
+    },
+    { name: 'Flights', slug: '', mega: null },
+    { name: 'Offer Zone', slug: 'products', mega: null },
+  ];
+  const rightAlignedItems = ['Home & Furniture', 'Sports, Books & More'];
+
+  return (
+    <nav style={{ background: '#fff', borderBottom: '1px solid #eee', boxShadow: '0 1px 3px rgba(0,0,0,.08)', position: 'relative', zIndex: 100 }}>
+      <div style={{ maxWidth: 1300, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {navItems.map((item) => {
+          const anchorRight = rightAlignedItems.includes(item.name);
+          return (
+            <div key={item.name} style={{ position: 'relative', flexShrink: 0 }}
+              onMouseEnter={() => item.mega && setActiveMenu(item.name)}
+              onMouseLeave={() => setActiveMenu(null)}
+            >
+              {item.mega ? (
+                <div
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 3, padding: '12px 18px', fontSize: 13.5,
+                    fontWeight: 500, color: activeMenu === item.name ? '#2874f0' : '#212121',
+                    cursor: 'pointer', whiteSpace: 'nowrap',
+                    borderBottom: activeMenu === item.name ? '3px solid #2874f0' : '3px solid transparent',
+                    transition: 'color .15s',
+                  }}
+                >
+                  {item.name}
+                  <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </div>
+              ) : (
+                <Link
+                  href={item.slug ? `/category/${item.slug}` : '/products'}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 3, padding: '12px 18px', fontSize: 13.5,
+                    fontWeight: 500, color: '#212121', textDecoration: 'none', whiteSpace: 'nowrap',
+                    borderBottom: '3px solid transparent',
+                  }}
+                >
+                  {item.name}
+                </Link>
+              )}
+
+              {item.mega && activeMenu === item.name && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    ...(anchorRight ? { right: 0 } : { left: 0 }),
+                    top: '100%',
+                    background: '#fff', boxShadow: '0 8px 30px rgba(0,0,0,.15)', zIndex: 999,
+                    display: 'flex', padding: 0, minWidth: 750,
+                    border: '1px solid #e0e0e0', borderTop: '2px solid #2874f0',
+                  }}
+                  onMouseEnter={() => setActiveMenu(item.name)}
+                  onMouseLeave={() => setActiveMenu(null)}
+                >
+                  {item.mega.map((col, ci) => (
+                    <div key={ci} style={{
+                      minWidth: 115, padding: '14px 14px', flex: 1,
+                      borderRight: ci < item.mega.length - 1 ? '1px solid #f0f0f0' : 'none',
+                    }}>
+                      <p style={{
+                        fontSize: 12.5, fontWeight: 700, color: col.isFeatured ? '#2874f0' : '#212121',
+                        marginBottom: 8, paddingBottom: 5,
+                        borderBottom: col.isFeatured ? 'none' : '1px solid #f0f0f0',
+                        cursor: 'pointer',
+                      }}>
+                        {col.heading} {!col.isFeatured && <span style={{ float: 'right', fontSize: 11, color: '#2874f0' }}>›</span>}
+                      </p>
+                      {col.links.map((link) => (
+                        <Link key={link.label} href={link.slug ? `/products?category=${link.slug}` : '/products'}
+                          style={{
+                            display: 'block', fontSize: 12, color: '#555', textDecoration: 'none',
+                            padding: '2px 0', lineHeight: 1.6, transition: 'color .12s',
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.color = '#2874f0'}
+                          onMouseLeave={e => e.currentTarget.style.color = '#555'}
+                          onClick={() => setActiveMenu(null)}
+                        >
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </nav>
   );

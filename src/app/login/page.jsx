@@ -1,10 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { FiMail, FiLock, FiUser, FiPhone, FiEye, FiEyeOff } from 'react-icons/fi';
-import { FcGoogle } from 'react-icons/fc';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,229 +9,182 @@ export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    phone: '',
-  });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '' });
 
   useEffect(() => {
-    if (isAuthenticated) {
-      router.push('/');
-    }
+    if (isAuthenticated) router.push('/');
   }, [isAuthenticated, router]);
 
   if (isAuthenticated) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
-
-    let result;
-    if (isLogin) {
-      result = await login(formData.email, formData.password);
-    } else {
-      result = await register(formData.name, formData.email, formData.password, formData.phone);
-    }
-
+    const result = isLogin
+      ? await login(formData.email, formData.password)
+      : await register(formData.name, formData.email, formData.password, formData.phone);
     setLoading(false);
-    if (result.success) {
-      router.push('/');
-    }
+    if (result.success) router.push('/');
+    else setError(result.message || 'Something went wrong');
   };
 
   const handleGuestLogin = async () => {
     setLoading(true);
     const result = await guestLogin();
     setLoading(false);
-    if (result.success) {
-      router.push('/');
-    }
+    if (result.success) router.push('/');
   };
 
   const handleGoogleLogin = async () => {
-    // Since we can't do real OAuth without Google Cloud setup,
-    // we'll simulate Google login with a prefilled form
     setLoading(true);
-    const result = await googleLogin(
-      'Google User',
-      `user${Date.now()}@gmail.com`,
-      'https://lh3.googleusercontent.com/a/default-user=s96-c'
-    );
+    const result = await googleLogin('Google User', `user${Date.now()}@gmail.com`, '');
     setLoading(false);
-    if (result.success) {
-      router.push('/');
-    }
-  };
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (result.success) router.push('/');
   };
 
   return (
-    <div className="min-h-[calc(100vh-120px)] bg-[#f1f3f6] flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-[750px] bg-white rounded shadow-lg flex overflow-hidden min-h-[528px]">
-        {/* Left Panel - Blue */}
-        <div className="hidden md:flex w-[40%] bg-[#2874f0] p-8 flex-col justify-between">
+    <div style={{ minHeight: 'calc(100vh - 56px)', background: '#f1f3f6', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 16px' }}>
+      <div style={{ display: 'flex', maxWidth: 750, width: '100%', background: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,.15)', borderRadius: 2, overflow: 'hidden', minHeight: 500 }}>
+
+        {/* Left Panel – Blue */}
+        <div style={{ background: '#2874f0', width: '40%', padding: '36px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }} className="hidden-mobile">
           <div>
-            <h2 className="text-white text-[28px] font-bold mb-4">
-              {isLogin ? 'Login' : 'Looks like you\'re new here!'}
+            <h2 style={{ color: '#fff', fontSize: 28, fontWeight: 700, lineHeight: 1.3, marginBottom: 12 }}>
+              {isLogin ? 'Login' : "Looks like you're new here!"}
             </h2>
-            <p className="text-white/70 text-lg leading-relaxed">
+            <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 17, lineHeight: 1.6 }}>
               {isLogin
                 ? 'Get access to your Orders, Wishlist and Recommendations'
-                : 'Sign up with your email to get started'
-              }
+                : 'Sign up with your email & mobile number to get started'}
             </p>
           </div>
-          <div className="mt-8 flex justify-center">
-            <svg width="200" height="160" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="50" y="40" width="100" height="80" rx="8" fill="rgba(255,255,255,0.15)"/>
-              <rect x="65" y="55" width="70" height="10" rx="5" fill="rgba(255,255,255,0.25)"/>
-              <rect x="65" y="75" width="70" height="10" rx="5" fill="rgba(255,255,255,0.25)"/>
-              <rect x="80" y="95" width="40" height="14" rx="4" fill="#fb641b"/>
-              <circle cx="100" cy="25" r="15" fill="rgba(255,255,255,0.2)"/>
-              <path d="M95 25 l5 5 l10-10" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
+          {/* Illustration */}
+          <svg viewBox="0 0 220 160" width="100%" style={{ marginTop: 24 }}>
+            <rect x="50" y="30" width="120" height="90" rx="8" fill="rgba(255,255,255,.13)"/>
+            <rect x="65" y="48" width="90" height="12" rx="4" fill="rgba(255,255,255,.22)"/>
+            <rect x="65" y="68" width="90" height="12" rx="4" fill="rgba(255,255,255,.22)"/>
+            <rect x="80" y="90" width="60" height="18" rx="4" fill="#fb641b"/>
+            <circle cx="110" cy="20" r="14" fill="rgba(255,255,255,.18)"/>
+            <circle cx="110" cy="20" r="8" fill="rgba(255,255,255,.3)"/>
+            <rect x="140" y="90" width="18" height="24" rx="2" fill="#ffe500" opacity=".9"/>
+            <rect x="62" y="108" width="20" height="8" rx="2" fill="#ffe500" opacity=".8"/>
+          </svg>
         </div>
 
-        {/* Right Panel - Form */}
-        <div className="flex-1 p-8 flex flex-col justify-center">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name (signup only) */}
+        {/* Right Panel – Form */}
+        <div style={{ flex: 1, padding: '32px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <form onSubmit={handleSubmit}>
+            {/* Name (signup) */}
             {!isLogin && (
-              <div className="relative">
-                <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Full Name"
-                  required={!isLogin}
-                  className="w-full pl-10 pr-4 py-3 border-b-2 border-gray-200 focus:border-[#2874f0] outline-none text-sm transition-colors"
-                  id="signup-name"
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="Full Name"
+                value={formData.name}
+                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                required={!isLogin}
+                style={{ width: '100%', borderBottom: '1px solid #c2c2c2', borderTop: 'none', borderLeft: 'none', borderRight: 'none', padding: '10px 0', fontSize: 14, outline: 'none', marginBottom: 20, boxSizing: 'border-box' }}
+              />
             )}
 
             {/* Email */}
-            <div className="relative">
-              <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Enter Email"
-                required
-                className="w-full pl-10 pr-4 py-3 border-b-2 border-gray-200 focus:border-[#2874f0] outline-none text-sm transition-colors"
-                id="login-email"
-              />
-            </div>
+            <input
+              type="email"
+              placeholder="Enter Email"
+              value={formData.email}
+              onChange={e => setFormData({ ...formData, email: e.target.value })}
+              required
+              style={{ width: '100%', borderBottom: '1px solid #c2c2c2', borderTop: 'none', borderLeft: 'none', borderRight: 'none', padding: '10px 0', fontSize: 14, outline: 'none', marginBottom: 20, boxSizing: 'border-box' }}
+            />
 
             {/* Password */}
-            <div className="relative">
-              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <div style={{ position: 'relative', marginBottom: 20 }}>
               <input
                 type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
                 placeholder="Enter Password"
+                value={formData.password}
+                onChange={e => setFormData({ ...formData, password: e.target.value })}
                 required
                 minLength={6}
-                className="w-full pl-10 pr-12 py-3 border-b-2 border-gray-200 focus:border-[#2874f0] outline-none text-sm transition-colors"
-                id="login-password"
+                style={{ width: '100%', borderBottom: '1px solid #c2c2c2', borderTop: 'none', borderLeft: 'none', borderRight: 'none', padding: '10px 0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
               />
-              <button
-                type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+              <button type="button" onClick={() => setShowPassword(v => !v)}
+                style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#2874f0', fontSize: 13, fontWeight: 600 }}>
+                {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
 
-            {/* Phone (signup only) */}
+            {/* Phone (signup) */}
             {!isLogin && (
-              <div className="relative">
-                <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="Mobile Number (optional)"
-                  className="w-full pl-10 pr-4 py-3 border-b-2 border-gray-200 focus:border-[#2874f0] outline-none text-sm transition-colors"
-                  id="signup-phone"
-                />
-              </div>
+              <input
+                type="tel"
+                placeholder="Mobile Number (optional)"
+                value={formData.phone}
+                onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                style={{ width: '100%', borderBottom: '1px solid #c2c2c2', borderTop: 'none', borderLeft: 'none', borderRight: 'none', padding: '10px 0', fontSize: 14, outline: 'none', marginBottom: 20, boxSizing: 'border-box' }}
+              />
             )}
 
-            {/* Terms */}
-            <p className="text-[11px] text-gray-500 leading-4">
+            {error && <p style={{ color: '#ff6161', fontSize: 13, marginBottom: 10 }}>{error}</p>}
+
+            <p style={{ fontSize: 11.5, color: '#878787', lineHeight: 1.6, marginBottom: 16 }}>
               By continuing, you agree to Flipkart&apos;s{' '}
-              <span className="text-[#2874f0] cursor-pointer">Terms of Use</span> and{' '}
-              <span className="text-[#2874f0] cursor-pointer">Privacy Policy</span>.
+              <span style={{ color: '#2874f0', cursor: 'pointer' }}>Terms of Use</span> and{' '}
+              <span style={{ color: '#2874f0', cursor: 'pointer' }}>Privacy Policy</span>.
             </p>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#fb641b] text-white py-3 rounded-sm text-sm font-semibold hover:bg-[#e85d19] transition-colors disabled:opacity-60 shadow-sm"
-              id="login-submit-btn"
-            >
+            {/* Login Button */}
+            <button type="submit" disabled={loading}
+              style={{ width: '100%', background: '#fb641b', color: '#fff', border: 'none', borderRadius: 2, padding: '14px 0', fontSize: 15, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, boxShadow: '0 2px 4px rgba(0,0,0,.2)', marginBottom: 14, letterSpacing: 0.3 }}>
               {loading ? 'Please wait...' : isLogin ? 'Login' : 'Create Account'}
             </button>
 
-            {/* Divider */}
-            <div className="flex items-center gap-3 my-2">
-              <span className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400">OR</span>
-              <span className="flex-1 h-px bg-gray-200" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <span style={{ flex: 1, height: 1, background: '#e8e8e8' }}/>
+              <span style={{ fontSize: 13, color: '#878787' }}>OR</span>
+              <span style={{ flex: 1, height: 1, background: '#e8e8e8' }}/>
             </div>
 
-            {/* Google Login */}
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 border border-gray-300 py-3 rounded-sm text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60"
-              id="google-login-btn"
+            {/* Google */}
+            <button type="button" onClick={handleGoogleLogin} disabled={loading}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, border: '1px solid #e8e8e8', borderRadius: 2, padding: '11px 0', fontSize: 14, color: '#212121', background: '#fff', cursor: 'pointer', marginBottom: 10 }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f9f9f9'}
+              onMouseLeave={e => e.currentTarget.style.background = '#fff'}
             >
-              <FcGoogle size={20} />
+              <svg width="18" height="18" viewBox="0 0 48 48">
+                <path fill="#FFC107" d="M43.6 20H24v8h11.1C33.3 33 29 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C33.8 6.4 29.2 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.6-8 19.6-20 0-1.3-.1-2.7-.4-4z"/>
+                <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.6 16 19 13 24 13c3 0 5.7 1.1 7.8 2.9l5.7-5.7C33.8 6.4 29.2 4 24 4 16.2 4 9.4 8.3 6.3 14.7z"/>
+                <path fill="#4CAF50" d="M24 44c5 0 9.5-1.9 12.9-5l-6-4.9C29 35.9 26.6 37 24 37c-4.9 0-9.1-3-10.9-7.3L6.9 35c3 6.2 9.7 9 17.1 9z"/>
+                <path fill="#1976D2" d="M43.6 20H24v8h11.1c-1 2.7-2.8 5-5.3 6.6l6 4.9C40 35.8 43.6 30.4 43.6 24c0-1.3-.1-2.7-.4-4z"/>
+              </svg>
               Continue with Google
             </button>
 
-            {/* Guest Login */}
-            <button
-              type="button"
-              onClick={handleGuestLogin}
-              disabled={loading}
-              className="w-full py-3 rounded-sm text-sm font-semibold text-[#2874f0] hover:bg-blue-50 transition-colors disabled:opacity-60 border border-[#2874f0]"
-              id="guest-login-btn"
+            {/* Guest */}
+            <button type="button" onClick={handleGuestLogin} disabled={loading}
+              style={{ width: '100%', border: '1px solid #2874f0', borderRadius: 2, padding: '11px 0', fontSize: 14, color: '#2874f0', background: '#fff', cursor: 'pointer', fontWeight: 600 }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f0f5ff'}
+              onMouseLeave={e => e.currentTarget.style.background = '#fff'}
             >
               Continue as Guest
             </button>
           </form>
 
-          {/* Toggle Login/Signup */}
-          <button
-            className="w-full text-center mt-6 text-sm font-semibold text-[#2874f0] hover:underline"
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setFormData({ name: '', email: '', password: '', phone: '' });
-            }}
+          <button onClick={() => { setIsLogin(v => !v); setFormData({ name: '', email: '', password: '', phone: '' }); setError(''); }}
+            style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: '#2874f0', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'none' }}
+            onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+            onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
           >
-            {isLogin ? 'New to Flipkart? Create an account' : 'Existing User? Log in'}
+            {isLogin ? "New to Flipkart? Create an account" : "Existing User? Log in"}
           </button>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 640px) { .hidden-mobile { display: none !important; } }
+      `}</style>
     </div>
   );
 }
