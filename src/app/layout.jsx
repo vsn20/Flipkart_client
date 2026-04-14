@@ -2,8 +2,7 @@ import './globals.css';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import ClientLayout from '@/components/layout/ClientLayout';
 
 export const metadata = {
   title: 'Flipkart Clone - Online Shopping India',
@@ -20,7 +19,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen flex flex-col">
+      <body style={{ margin: 0, minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'Roboto', sans-serif" }}>
         <AuthProvider>
           <CartProvider>
             <Toaster
@@ -41,9 +40,7 @@ export default function RootLayout({ children }) {
                 },
               }}
             />
-            <Navbar />
-            <main className="flex-1">{children}</main>
-            <Footer />
+            <ClientLayout>{children}</ClientLayout>
           </CartProvider>
         </AuthProvider>
       </body>

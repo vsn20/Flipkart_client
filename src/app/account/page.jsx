@@ -1,90 +1,241 @@
 'use client';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { FiUser, FiMail, FiPhone, FiMapPin, FiStar, FiPackage, FiHeart, FiLogOut } from 'react-icons/fi';
-import Link from 'next/link';
+import { authAPI } from '@/lib/api';
+import toast from 'react-hot-toast';
 
-export default function AccountPage() {
-  const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuth();
+export default function ProfilePage() {
+  const { user, updateUser } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [form, setForm] = useState({ firstName: '', lastName: '', gender: '' });
+  const [emailForm, setEmailForm] = useState('');
+  const [phoneForm, setPhoneForm] = useState('');
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
+    if (user) {
+      const parts = (user.name || '').split(' ');
+      setForm({
+        firstName: parts[0] || '',
+        lastName: parts.slice(1).join(' ') || '',
+        gender: user.gender || '',
+      });
+      setEmailForm(user.email || '');
+      setPhoneForm(user.phone || '');
     }
-  }, [isAuthenticated, router]);
+  }, [user]);
 
-  if (!isAuthenticated || !user) return null;
+  const handleSaveProfile = async () => {
+    try {
+      const name = `${form.firstName} ${form.lastName}`.trim();
+      await authAPI.updateProfile({ name, gender: form.gender });
+      updateUser({ name, gender: form.gender });
+      setEditing(false);
+      toast.success('Profile updated');
+    } catch { toast.error('Update failed'); }
+  };
+
+  const handleSaveEmail = async () => {
+    setEditingEmail(false);
+    toast.success('Email saved');
+  };
+
+  const handleSavePhone = async () => {
+    try {
+      await authAPI.updateProfile({ phone: phoneForm });
+      updateUser({ phone: phoneForm });
+      setEditingPhone(false);
+      toast.success('Phone number updated');
+    } catch { toast.error('Update failed'); }
+  };
+
+  if (!user) return null;
 
   return (
-    <div className="max-w-[900px] mx-auto px-2 sm:px-4 py-6">
-      {/* Profile Header */}
-      <div className="bg-white rounded-sm shadow-sm p-6 mb-4">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-[#2874f0] rounded-full flex items-center justify-center text-white text-2xl font-bold">
-            {user.name?.[0]?.toUpperCase() || 'U'}
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">{user.name}</h1>
-            <p className="text-sm text-gray-500">{user.email}</p>
-            {user.plus_tier !== 'none' && (
-              <span className="inline-flex items-center gap-1 mt-1 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">
-                <FiStar size={10} /> Plus {user.plus_tier} • {user.super_coins} SuperCoins
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Links */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-        {[
-          { href: '/orders', icon: <FiPackage size={24} />, label: 'My Orders', count: user.total_orders || 0 },
-          { href: '/wishlist', icon: <FiHeart size={24} />, label: 'Wishlist', count: null },
-          { href: '/flipkart-plus', icon: <FiStar size={24} />, label: 'SuperCoins', count: user.super_coins || 0 },
-          { href: '/cart', icon: '🛒', label: 'My Cart', count: null },
-        ].map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="bg-white rounded-sm shadow-sm p-4 text-center hover:shadow-md transition-shadow"
-          >
-            <div className="text-[#2874f0] flex justify-center mb-2 text-2xl">{item.icon}</div>
-            <p className="text-sm font-medium text-gray-800">{item.label}</p>
-            {item.count !== null && <p className="text-xs text-gray-500 mt-0.5">{item.count}</p>}
-          </Link>
-        ))}
-      </div>
-
-      {/* Profile Details */}
-      <div className="bg-white rounded-sm shadow-sm p-6 mb-4">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Personal Information</h2>
-        <div className="space-y-4">
-          {[
-            { icon: <FiUser size={18} />, label: 'Name', value: user.name },
-            { icon: <FiMail size={18} />, label: 'Email', value: user.email },
-            { icon: <FiPhone size={18} />, label: 'Phone', value: user.phone || 'Not added' },
-            { icon: <FiMapPin size={18} />, label: 'Address', value: user.address || 'Not added' },
-          ].map((field) => (
-            <div key={field.label} className="flex items-start gap-3 py-2 border-b border-gray-50">
-              <span className="text-gray-400 mt-0.5">{field.icon}</span>
-              <div>
-                <p className="text-xs text-gray-500">{field.label}</p>
-                <p className="text-sm text-gray-800">{field.value}</p>
-              </div>
+    <div style={{ background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,.08)' }}>
+      {/* Personal Information */}
+      <div style={{ padding: '24px 32px', borderBottom: '1px solid #f0f0f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 600, color: '#212121' }}>Personal Information</h2>
+          {!editing ? (
+            <button onClick={() => setEditing(true)}
+              style={{ fontSize: 13, color: '#2874f0', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>
+              Edit
+            </button>
+          ) : (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={handleSaveProfile}
+                style={{ fontSize: 13, color: '#fff', fontWeight: 600, background: '#2874f0', border: 'none', cursor: 'pointer', padding: '6px 20px', borderRadius: 2 }}>
+                Save
+              </button>
+              <button onClick={() => setEditing(false)}
+                style={{ fontSize: 13, color: '#212121', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>
+                Cancel
+              </button>
             </div>
-          ))}
+          )}
+        </div>
+
+        {/* Name Fields */}
+        <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+          <div style={{ flex: 1, maxWidth: 250 }}>
+            <input
+              type="text"
+              value={form.firstName}
+              onChange={e => setForm(p => ({ ...p, firstName: e.target.value }))}
+              disabled={!editing}
+              placeholder="First Name"
+              style={{
+                width: '100%', padding: '12px 14px', border: '1px solid #c2c2c2', borderRadius: 2,
+                fontSize: 14, color: '#212121', outline: 'none', background: editing ? '#fff' : '#f5f5f5',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+          <div style={{ flex: 1, maxWidth: 250 }}>
+            <input
+              type="text"
+              value={form.lastName}
+              onChange={e => setForm(p => ({ ...p, lastName: e.target.value }))}
+              disabled={!editing}
+              placeholder="Last Name"
+              style={{
+                width: '100%', padding: '12px 14px', border: '1px solid #c2c2c2', borderRadius: 2,
+                fontSize: 14, color: '#212121', outline: 'none', background: editing ? '#fff' : '#f5f5f5',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Gender */}
+        <div style={{ marginBottom: 8 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: '#212121', marginBottom: 8 }}>Your Gender</p>
+          <div style={{ display: 'flex', gap: 24 }}>
+            {['Male', 'Female'].map(g => (
+              <label key={g} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: editing ? 'pointer' : 'default', fontSize: 14, color: '#212121' }}>
+                <input
+                  type="radio"
+                  name="gender"
+                  value={g.toLowerCase()}
+                  checked={form.gender === g.toLowerCase()}
+                  onChange={e => setForm(p => ({ ...p, gender: e.target.value }))}
+                  disabled={!editing}
+                  style={{ accentColor: '#2874f0', width: 16, height: 16 }}
+                />
+                {g}
+              </label>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Logout */}
-      <button
-        className="w-full bg-white rounded-sm shadow-sm p-4 flex items-center justify-center gap-2 text-red-500 font-medium hover:bg-red-50 transition-colors"
-        onClick={() => { logout(); router.push('/'); }}
-      >
-        <FiLogOut size={18} /> Logout
-      </button>
+      {/* Email Address */}
+      <div style={{ padding: '24px 32px', borderBottom: '1px solid #f0f0f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#212121' }}>Email Address</h3>
+          {!editingEmail ? (
+            <button onClick={() => setEditingEmail(true)}
+              style={{ fontSize: 13, color: '#2874f0', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>
+              Edit
+            </button>
+          ) : (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={handleSaveEmail}
+                style={{ fontSize: 13, color: '#fff', fontWeight: 600, background: '#2874f0', border: 'none', cursor: 'pointer', padding: '6px 20px', borderRadius: 2 }}>
+                Save
+              </button>
+              <button onClick={() => setEditingEmail(false)}
+                style={{ fontSize: 13, color: '#212121', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+        <input
+          type="email"
+          value={emailForm}
+          onChange={e => setEmailForm(e.target.value)}
+          disabled={!editingEmail}
+          style={{
+            width: '100%', maxWidth: 250, padding: '12px 14px', border: '1px solid #c2c2c2', borderRadius: 2,
+            fontSize: 14, color: '#212121', outline: 'none', background: editingEmail ? '#fff' : '#f5f5f5',
+            boxSizing: 'border-box',
+          }}
+        />
+      </div>
+
+      {/* Mobile Number */}
+      <div style={{ padding: '24px 32px', borderBottom: '1px solid #f0f0f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#212121' }}>Mobile Number</h3>
+          {!editingPhone ? (
+            <button onClick={() => setEditingPhone(true)}
+              style={{ fontSize: 13, color: '#2874f0', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>
+              Edit
+            </button>
+          ) : (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={handleSavePhone}
+                style={{ fontSize: 13, color: '#fff', fontWeight: 600, background: '#2874f0', border: 'none', cursor: 'pointer', padding: '6px 20px', borderRadius: 2 }}>
+                Save
+              </button>
+              <button onClick={() => setEditingPhone(false)}
+                style={{ fontSize: 13, color: '#212121', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+        <input
+          type="tel"
+          value={phoneForm}
+          onChange={e => setPhoneForm(e.target.value)}
+          disabled={!editingPhone}
+          placeholder="Add phone number"
+          style={{
+            width: '100%', maxWidth: 250, padding: '12px 14px', border: '1px solid #c2c2c2', borderRadius: 2,
+            fontSize: 14, color: '#212121', outline: 'none', background: editingPhone ? '#fff' : '#f5f5f5',
+            boxSizing: 'border-box',
+          }}
+        />
+      </div>
+
+      {/* FAQs */}
+      <div style={{ padding: '24px 32px' }}>
+        <h3 style={{ fontSize: 18, fontWeight: 600, color: '#212121', marginBottom: 16 }}>FAQs</h3>
+        {[
+          {
+            q: 'What happens when I update my email address (or mobile number)?',
+            a: 'Your login email id (or mobile number) changes, likewise. You\'ll receive all your account related communication on your updated email address (or mobile number).',
+          },
+          {
+            q: 'When will my Flipkart account be updated with the new email address (or mobile number)?',
+            a: 'It happens as soon as you confirm the verification code sent to your email (or mobile) and save the changes.',
+          },
+          {
+            q: 'What happens to my existing Flipkart account when I update my email address (or mobile number)?',
+            a: 'Updating your email address (or mobile number) doesn\'t invalidate your existing Flipkart account. Your account remains fully functional.',
+          },
+          {
+            q: 'Does my Seller account get affected when I update my email address?',
+            a: 'Flipkart has a single sign-on. Any changes will reflect in your Seller account also.',
+          },
+        ].map((faq, i) => (
+          <div key={i} style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#212121', marginBottom: 4 }}>{faq.q}</p>
+            <p style={{ fontSize: 13, color: '#878787', lineHeight: 1.6 }}>{faq.a}</p>
+          </div>
+        ))}
+
+        {/* Deactivate */}
+        <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#ff6161', fontWeight: 600 }}>
+            Deactivate Account
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
