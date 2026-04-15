@@ -24,16 +24,23 @@ const HOMEPAGE_TABS = [
 
 const TAB_TO_CATEGORY = {
   'for-you': '',
-  'fashion': 'fashion-men',
-  'mobiles': 'mobiles',
-  'beauty': 'beauty',
+  'fashion': 'men',
+  'mobiles': 'electronics',
+  'beauty': 'women',
   'electronics': 'electronics',
   'home': 'home-furniture',
-  'appliances': 'appliances',
-  'toys': 'toys-baby',
-  'sports': '',
-  'books': '',
+  'appliances': 'tvs-appliances',
+  'toys': 'baby-kids',
+  'sports': 'sports-books-more',
+  'books': 'sports-books-more',
   'furniture': 'home-furniture',
+};
+
+// Map tabs to subcategory slugs for more precise filtering
+const TAB_TO_SUBCATEGORY = {
+  'mobiles': 'mobiles',
+  'beauty': 'beauty-personal-care',
+  'furniture': 'furniture',
 };
 
 const BANNERS = [
@@ -65,8 +72,16 @@ export default function HomePage() {
   const [search, setSearch] = useState('');
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const accountRef = useRef(null);
   const moreRef = useRef(null);
+
+  // Track scroll for sticky nav
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 120);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Fetch categories once
   useEffect(() => {
@@ -79,8 +94,13 @@ export default function HomePage() {
       setLoading(true);
       try {
         const catSlug = TAB_TO_CATEGORY[activeTab];
+        const subSlug = TAB_TO_SUBCATEGORY[activeTab];
         const params = { limit: 20 };
-        if (catSlug) params.category = catSlug;
+        if (subSlug) {
+          params.subcategory = subSlug;
+        } else if (catSlug) {
+          params.category = catSlug;
+        }
         const res = await productsAPI.getAll(params);
         setProducts(res.data.products || []);
       } catch {
@@ -273,22 +293,25 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {/* ── Category Icon Tabs ── */}
-        <div style={{ borderTop: '1px solid #f0f0f0', overflow: 'hidden' }}>
+        {/* ── Category Icon Tabs (sticky on scroll) ── */}
+        <div style={{
+          borderTop: '1px solid #f0f0f0', overflow: 'hidden',
+          ...(scrolled ? { position: 'fixed', top: 0, left: 0, right: 0, zIndex: 900, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,.1)', borderTop: 'none' } : {})
+        }}>
           <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', overflowX: 'auto', scrollbarWidth: 'none', padding: '0 8px' }}>
             {HOMEPAGE_TABS.map(tab => (
               <button key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  padding: '10px 16px', border: 'none', background: 'none', cursor: 'pointer',
-                  flexShrink: 0, minWidth: 80,
+                  display: 'flex', flexDirection: scrolled ? 'row' : 'column', alignItems: 'center', gap: scrolled ? 6 : 4,
+                  padding: scrolled ? '10px 14px' : '10px 16px', border: 'none', background: 'none', cursor: 'pointer',
+                  flexShrink: 0, minWidth: scrolled ? 'auto' : 80,
                   borderBottom: activeTab === tab.key ? '3px solid #2874f0' : '3px solid transparent',
-                  transition: 'border-color .15s',
+                  transition: 'all .15s',
                 }}>
-                <span style={{ fontSize: 22 }}>{tab.icon}</span>
+                {!scrolled && <span style={{ fontSize: 22 }}>{tab.icon}</span>}
                 <span style={{
-                  fontSize: 12, fontWeight: activeTab === tab.key ? 700 : 500,
+                  fontSize: scrolled ? 13 : 12, fontWeight: activeTab === tab.key ? 700 : 500,
                   color: activeTab === tab.key ? '#2874f0' : '#212121',
                   whiteSpace: 'nowrap',
                 }}>{tab.label}</span>
@@ -296,6 +319,8 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+        {/* Spacer when sticky */}
+        {scrolled && <div style={{ height: 46 }} />}
       </header>
 
       {/* ═══════════════════ MAIN CONTENT ═══════════════════ */}
@@ -387,13 +412,13 @@ export default function HomePage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
               {products.map(product => (
                 <Link key={product.id} href={`/product/${product.id}`}
-                  style={{ textDecoration: 'none', background: '#fff', borderRadius: 8, padding: 12, border: '1px solid #f0f0f0', transition: 'box-shadow .2s, transform .15s', display: 'block' }}
+                  style={{ textDecoration: 'none', background: '#fff', borderRadius: 8, border: '1px solid #f0f0f0', transition: 'box-shadow .2s, transform .15s', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
                   onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,.12)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
                   onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}>
-                  <div style={{ position: 'relative', paddingBottom: '100%', overflow: 'hidden', borderRadius: 8, background: '#f5f5f5', marginBottom: 10 }}>
+                  <div style={{ width: '100%', height: 180, overflow: 'hidden', background: '#f5f5f5', borderRadius: '8px 8px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0 }}>
                     <img src={product.images?.[0] || 'https://placehold.co/200x200/f1f3f6/878787?text=Product'}
                       alt={product.name}
-                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'contain', padding: 8 }}
+                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', padding: 12 }}
                       onError={e => e.target.src = 'https://placehold.co/200x200/f1f3f6/878787?text=Product'} />
                     {product.discount_percent >= 40 && (
                       <span style={{ position: 'absolute', top: 6, left: 6, background: '#ff6161', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 3 }}>
@@ -401,28 +426,30 @@ export default function HomePage() {
                       </span>
                     )}
                   </div>
-                  <p style={{ fontSize: 13, color: '#212121', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {product.name}
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: '#212121' }}>{formatPrice(product.price)}</span>
-                    {parseFloat(product.mrp) > parseFloat(product.price) && (
-                      <>
-                        <span style={{ fontSize: 12, color: '#878787', textDecoration: 'line-through' }}>{formatPrice(product.mrp)}</span>
-                        <span style={{ fontSize: 12, color: '#388e3c', fontWeight: 600 }}>{product.discount_percent}% off</span>
-                      </>
-                    )}
-                  </div>
-                  {product.rating > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span style={{ background: product.rating >= 4 ? '#388e3c' : product.rating >= 3 ? '#ff9f00' : '#ff6161', color: '#fff', fontSize: 11, padding: '1px 5px', borderRadius: 3, fontWeight: 600 }}>
-                        {parseFloat(product.rating).toFixed(1)} ★
-                      </span>
-                      {product.review_count > 0 && (
-                        <span style={{ fontSize: 11, color: '#878787' }}>({product.review_count?.toLocaleString()})</span>
+                  <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4, minHeight: 90 }}>
+                    <p style={{ fontSize: 13, color: '#212121', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+                      {product.name}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 16, fontWeight: 700, color: '#212121' }}>{formatPrice(product.price)}</span>
+                      {parseFloat(product.mrp) > parseFloat(product.price) && (
+                        <>
+                          <span style={{ fontSize: 12, color: '#878787', textDecoration: 'line-through' }}>{formatPrice(product.mrp)}</span>
+                          <span style={{ fontSize: 12, color: '#388e3c', fontWeight: 600 }}>{product.discount_percent}% off</span>
+                        </>
                       )}
                     </div>
-                  )}
+                    {product.rating > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{ background: product.rating >= 4 ? '#388e3c' : product.rating >= 3 ? '#ff9f00' : '#ff6161', color: '#fff', fontSize: 11, padding: '1px 5px', borderRadius: 3, fontWeight: 600 }}>
+                          {parseFloat(product.rating).toFixed(1)} ★
+                        </span>
+                        {product.review_count > 0 && (
+                          <span style={{ fontSize: 11, color: '#878787' }}>({product.review_count?.toLocaleString()})</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </Link>
               ))}
             </div>

@@ -93,17 +93,26 @@ export default function CheckoutPage() {
     } catch (e) { toast.error('Failed'); } finally { setPlacing(false); }
   };
 
+  // Navigate to payment page
+  const goToPayment = () => {
+    const params = new URLSearchParams();
+    if (selectedAddress) params.set('address_id', selectedAddress.id);
+    if (productId) params.set('product_id', productId);
+    if (qty > 1) params.set('qty', qty);
+    router.push(`/checkout/payment?${params.toString()}`);
+  };
+
   return (
     <div style={{background:'#f1f3f6', minHeight:'100vh'}}>
       <div style={{background:'#fff', borderBottom:'1px solid #e0e0e0'}}>
         <div style={{maxWidth:1100, margin:'0 auto', padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'center', gap:40}}>
           {[
             {l:'Address', done:true, active:false},
-            {l:'Order Summary', active:step===2, done:step>2},
-            {l:'Payment', active:step===3, done:step>3}
+            {l:'Order Summary', active:true, done:false},
+            {l:'Payment', active:false, done:false}
           ].map((s,i)=>(
             <div key={i} style={{display:'flex', alignItems:'center', gap:8}}>
-              {i>0 && <div style={{width:80, height:1, background:i<=step-1?'#2874f0':'#e0e0e0', marginRight:8}}/>}
+              {i>0 && <div style={{width:80, height:1, background:s.done||s.active||i===0?'#2874f0':'#e0e0e0', marginRight:8}}/>}
               <div style={{width:20,height:20,borderRadius:'50%',background:s.active?'#2874f0':'#fff',border:`2px solid ${s.active||s.done?'#2874f0':'#e0e0e0'}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,color:s.active?'#fff':s.done?'#2874f0':'#878787'}}>{s.done?'✓':i+1}</div>
               <span style={{fontSize:13,color:s.active?'#000':'#878787',fontWeight:s.active?600:400}}>{s.l}</span>
             </div>
@@ -128,28 +137,20 @@ export default function CheckoutPage() {
               </div>
               <button onClick={()=>setShowAddressDrawer(true)} style={{padding:'8px 20px', border:'1px solid #e0e0e0', background:'#fff', color:'#2874f0', borderRadius:2, fontWeight:500, cursor:'pointer', height:36}}>Change</button>
             </div>
-            <div style={{background:'#fff7e6', padding:'12px 16px', marginTop:14, borderRadius:4, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-              <div>
-                <div style={{fontSize:13, color:'#212121'}}>Help us reach you faster.</div>
-                <div style={{fontSize:13, color:'#878787'}}>Please set exact location on map.</div>
-              </div>
-              <button style={{background:'#fff', border:'1px solid #dbdb', padding:'8px 20px', borderRadius:2, color:'#2874f0', fontWeight:500, cursor:'pointer'}}>Set Location</button>
-            </div>
           </div>
 
           <div style={{background:'#fff', padding:'20px', marginBottom:8, boxShadow:'0 1px 2px rgba(0,0,0,.1)'}}>
-            <div style={{color:'#008c00', fontSize:12, fontWeight:700, marginBottom:14, letterSpacing:.5}}>SUPER DEALS</div>
             <div style={{display:'flex', gap:24}}>
               <img src={item.product.images?.[0]} alt="" style={{width:90, height:110, objectFit:'contain'}}/>
               <div style={{flex:1}}>
                 <div style={{fontSize:16, fontWeight:500, marginBottom:4}}>{item.product.name}</div>
-                <div style={{fontSize:14, color:'#878787', marginBottom:8}}>6 GB RAM</div>
+                <div style={{fontSize:14, color:'#878787', marginBottom:8}}>{item.product.color || 'Standard'}</div>
                 <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:12}}>
                   <div style={{display:'flex', alignItems:'center', gap:2}}>
-                    {[...Array(5)].map((_,i)=><span key={i} style={{color:i<4?'#388e3c':'#e0e0e0', fontSize:16}}>★</span>)}
-                    <span style={{marginLeft:4, fontSize:14, color:'#878787'}}>4.2</span>
+                    {[...Array(5)].map((_,i)=><span key={i} style={{color:i<Math.round(parseFloat(item.product.rating)||4)?'#388e3c':'#e0e0e0', fontSize:16}}>★</span>)}
+                    <span style={{marginLeft:4, fontSize:14, color:'#878787'}}>{parseFloat(item.product.rating||4).toFixed(1)}</span>
                   </div>
-                  <span style={{color:'#878787', fontSize:14}}>• (680)</span>
+                  <span style={{color:'#878787', fontSize:14}}>• ({(item.product.review_count||680).toLocaleString()})</span>
                   <img src="https://static-assets-web.flixcart.com/fk-p-linchpin-web/fk-cp-zion/img/fa_62673a.png" alt="assured" style={{height:18, marginLeft:4}}/>
                 </div>
                 <div style={{display:'flex', alignItems:'baseline', gap:10, marginBottom:6}}>
@@ -158,7 +159,6 @@ export default function CheckoutPage() {
                   <span style={{fontSize:22, fontWeight:700}}>{formatPrice(parseFloat(item.product.price))}</span>
                 </div>
                 <div style={{fontSize:14, marginBottom:4}}>+ ₹{fee} Protect Promise Fee <span style={{color:'#878787', cursor:'pointer'}}>ⓘ</span></div>
-                <div style={{fontSize:13, color:'#878787'}}>Or Pay ₹9,399 + <span style={{color:'#ffd700'}}>●</span> 100</div>
               </div>
               <div>
                 <select value={qty} onChange={e=>handleQtyChange(e.target.value)} style={{padding:'6px 24px 6px 12px', border:'1px solid #e0e0e0', borderRadius:2, fontSize:14, background:'#fff', cursor:'pointer'}}>
@@ -166,28 +166,20 @@ export default function CheckoutPage() {
                 </select>
               </div>
             </div>
-            <div style={{marginTop:20, fontSize:14}}>Delivery by <span style={{fontWeight:500}}>Apr 18, Sat</span></div>
-            <div style={{marginTop:24, display:'flex', alignItems:'center', gap:10}}>
+            <div style={{borderTop:'1px solid #f0f0f0', marginTop:16, paddingTop:16, display:'flex', alignItems:'center', gap:8}}>
+              <span style={{fontSize:14}}>🚚</span>
+              <span style={{fontSize:14, fontWeight:500}}>EXPRESS</span>
+              <span style={{fontSize:14}}> Delivery in 2 days, {new Date(Date.now()+2*86400000).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})}</span>
+            </div>
+            <div style={{marginTop:16, display:'flex', alignItems:'center', gap:10}}>
               <input type="checkbox" id="gst" style={{width:18, height:18}}/>
               <label htmlFor="gst" style={{fontSize:14}}>Use GST Invoice</label>
             </div>
           </div>
 
-          {step === 3 && (
-            <div style={{background:'#fff', padding:'20px', marginBottom:8, boxShadow:'0 1px 2px rgba(0,0,0,.1)'}}>
-              <div style={{fontSize:16, fontWeight:500, marginBottom:16, color:'#2874f0', borderBottom:'2px solid #2874f0', paddingBottom:8, display:'inline-block'}}>PAYMENT OPTIONS</div>
-              {['Cash on Delivery','UPI','Credit / Debit / ATM Card','EMI','Net Banking'].map(opt=>(
-                <label key={opt} style={{display:'flex', alignItems:'center', gap:12, padding:'16px', borderBottom:'1px solid #f0f0f0', cursor:'pointer'}}>
-                  <input type="radio" name="pay" checked={paymentMethod===opt} onChange={()=>setPaymentMethod(opt)} style={{width:18, height:18, accentColor:'#2874f0'}}/>
-                  <span style={{fontSize:14}}>{opt}</span>
-                </label>
-              ))}
-            </div>
-          )}
-
           <div style={{background:'#fff', padding:'16px 20px', marginBottom:8, boxShadow:'0 1px 2px rgba(0,0,0,.1)'}}>
             <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:12}}>
-              <div style={{width:24, height:24, background:'#ff9f00', borderRadius:3, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:14}}>📦</div>
+              <span style={{fontSize:20}}>👍</span>
               <span style={{fontSize:16, fontWeight:500}}>Rest assured with Open Box Delivery</span>
             </div>
             <div style={{fontSize:14, color:'#212121', lineHeight:'20px', paddingLeft:34}}>
@@ -197,52 +189,43 @@ export default function CheckoutPage() {
         </div>
 
         <div style={{width:330, flexShrink:0}}>
-          <div style={{background:'#fff', marginBottom:12, boxShadow:'0 1px 2px rgba(0,0,0,.1)', borderRadius:4, overflow:'hidden'}}>
-            <div style={{padding:14, display:'flex', gap:12, background:'#f5f5f5'}}>
-              <img src="https://static-assets-web.flixcart.com/fk-p-linchpin-web/fk-cp-zion/img/fk-plus_3b0baa.png" style={{width:56, height:56, borderRadius:4, background:'#000', padding:8}} alt=""/>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:600, fontSize:14, marginBottom:2}}>Get privileges worth ₹1,259</div>
-                <div style={{fontSize:12, color:'#878787', lineHeight:'16px'}}>FREE YouTube Premium, 5% SuperCoin cashback only with Black membership →</div>
-              </div>
-            </div>
-            <div style={{padding:'12px 14px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-              <div style={{fontSize:14}}><span style={{textDecoration:'line-through', color:'#878787', marginRight:6}}>₹499</span>₹349 for 3 months</div>
-              <button style={{background:'#2874f0', color:'#fff', border:'none', padding:'8px 24px', borderRadius:4, fontWeight:500, cursor:'pointer'}}>Add</button>
-            </div>
-          </div>
-
           <div style={{background:'#fff', padding:'16px', boxShadow:'0 1px 2px rgba(0,0,0,.1)'}}>
             {[
               {l:'MRP', v:formatPrice(mrp), d:true},
-              {l:'Fees', v:formatPrice(fee), d:true},
-              {l:'Discounts', v:`- ${formatPrice(discount)}`, c:'#388e3c', d:true},
+              {l:'Fees', v:`₹${fee}`, d:true},
+              {l:'Discounts', v:`-${formatPrice(discount)}`, c:'#388e3c', d:true},
             ].map((r,i)=>(
               <div key={i} style={{display:'flex', justifyContent:'space-between', padding:'10px 0', borderBottom:i<2?'1px dashed #e0e0e0':'none', fontSize:14}}>
-                <span style={{color:'#212121', borderBottom:r.d?'1px dotted #878787':''}}>{r.l} {r.d&&'⌄'}</span>
+                <span style={{color:'#212121'}}>{r.l} {r.d&&'⌄'}</span>
                 <span style={{color:r.c||'#212121', fontWeight:r.l==='Discounts'?500:400}}>{r.v}</span>
               </div>
             ))}
-            <div style={{display:'flex', justifyContent:'space-between', padding:'14px 0 8px', fontSize:15, fontWeight:500}}>
+            <div style={{display:'flex', justifyContent:'space-between', padding:'14px 0 8px', fontSize:16, fontWeight:600, borderTop:'1px solid #e0e0e0'}}>
               <span>Total Amount</span>
               <span>{formatPrice(total)}</span>
             </div>
-            <div style={{background:'#e8f5e9', color:'#388e3c', padding:'10px', borderRadius:4, textAlign:'center', fontSize:14, marginTop:8, display:'flex', alignItems:'center', justifyContent:'center', gap:6}}>
-              <span style={{background:'#388e3c', color:'#fff', borderRadius:'50%', width:18, height:18, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11}}>₹</span>
-              You'll save <b>{formatPrice(save)}</b> on this order!
+            <div style={{background:'#e8f5e9', color:'#388e3c', padding:'10px', borderRadius:4, textAlign:'center', fontSize:14, marginTop:8}}>
+              You will save {formatPrice(save)} on this order
             </div>
           </div>
 
+          {/* Safe & Secure */}
+          <div style={{background:'#fff', marginTop:12, padding:'14px 16px', boxShadow:'0 1px 2px rgba(0,0,0,.1)', display:'flex', alignItems:'center', gap:10}}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2874f0" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+            <div style={{fontSize:13, color:'#878787', lineHeight:'18px'}}>Safe and secure payments. Easy returns. 100% Authentic products.</div>
+          </div>
+
+          {/* Continue sticky bar */}
           <div style={{background:'#fff', marginTop:12, padding:'12px 16px', boxShadow:'0 1px 2px rgba(0,0,0,.1)', display:'flex', justifyContent:'space-between', alignItems:'center', position:'sticky', bottom:12}}>
             <div>
               <div style={{fontSize:12, color:'#878787', textDecoration:'line-through'}}>{formatPrice(mrp)}</div>
-              <div style={{fontSize:20, fontWeight:600}}>{formatPrice(total)} <span style={{fontSize:12, color:'#878787', cursor:'pointer'}}>ⓘ</span></div>
+              <div style={{fontSize:20, fontWeight:600}}>{formatPrice(total)}</div>
+              <div style={{fontSize:11, color:'#2874f0', cursor:'pointer'}}>View price details</div>
             </div>
-            {/* FIX: white text, goes to payment */}
             <button
-              onClick={()=> step===2? setStep(3) : handlePlace()}
-              disabled={placing}
-              style={{background:'#fb641b', color:'#fff', border:'none', padding:'12px 32px', borderRadius:4, fontWeight:600, fontSize:15, cursor:'pointer', minWidth:140, color:'#fff'}}>
-              {placing? 'Processing...' : step===2? 'CONTINUE' : 'PLACE ORDER'}
+              onClick={goToPayment}
+              style={{background:'#fb641b', color:'#fff', border:'none', padding:'14px 40px', borderRadius:4, fontWeight:600, fontSize:16, cursor:'pointer'}}>
+              CONTINUE
             </button>
           </div>
         </div>

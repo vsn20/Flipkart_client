@@ -9,27 +9,55 @@ function ProductsContent() {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
   const categorySlug = searchParams.get('category') || '';
+  const subcategorySlug = searchParams.get('subcategory') || '';
+  const subSubcategorySlug = searchParams.get('sub_subcategory') || '';
 
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [categoryTree, setCategoryTree] = useState([]);
   const [brands, setBrands] = useState([]);
+  const [availableColors, setAvailableColors] = useState([]);
   const [brandSearch, setBrandSearch] = useState('');
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const [filters, setFilters] = useState({
-    category: categorySlug, min_price: '', max_price: '', min_rating: '', brand: '', sort: 'rating', search: searchQuery, page: 1,
+    category: categorySlug, subcategory: subcategorySlug, sub_subcategory: subSubcategorySlug,
+    min_price: '', max_price: '', min_rating: '', brand: '', color: '',
+    sort: 'rating', search: searchQuery, page: 1,
   });
 
-  useEffect(() => { categoriesAPI.getAll().then(r => setCategories(r.data.categories || [])); }, []);
-  useEffect(() => { setFilters(p => ({ ...p, search: searchQuery, category: categorySlug, page: 1 })); }, [searchQuery, categorySlug]);
+  // Fetch category tree on mount
+  useEffect(() => {
+    categoriesAPI.getAll().then(r => setCategoryTree(r.data.categories || [])).catch(() => {});
+  }, []);
+
+  // Sync URL params to filters
+  useEffect(() => {
+    setFilters(p => ({ ...p, search: searchQuery, category: categorySlug, subcategory: subcategorySlug, sub_subcategory: subSubcategorySlug, page: 1 }));
+  }, [searchQuery, categorySlug, subcategorySlug, subSubcategorySlug]);
+
+  // Fetch products when filters change
   useEffect(() => { fetchProducts(); }, [filters]);
 
-  // Fetch brands whenever category changes
+  // Fetch brands when category/subcategory changes
   useEffect(() => {
-    const activeCategory = categories.find(c => c.slug === filters.category);
-    productsAPI.getBrands(activeCategory?.id).then(r => setBrands(r.data.brands || [])).catch(() => setBrands([]));
-  }, [filters.category, categories]);
+    const params = {};
+    const activeCat = categoryTree.find(c => c.slug === filters.category);
+    if (activeCat) params.category_id = activeCat.id;
+    const activeSub = activeCat?.subcategories?.find(s => s.slug === filters.subcategory);
+    if (activeSub) params.subcategory_id = activeSub.id;
+    productsAPI.getBrands(params).then(r => setBrands(r.data.brands || [])).catch(() => setBrands([]));
+  }, [filters.category, filters.subcategory, categoryTree]);
+
+  // Fetch colors when category/subcategory changes
+  useEffect(() => {
+    const params = {};
+    const activeCat = categoryTree.find(c => c.slug === filters.category);
+    if (activeCat) params.category_id = activeCat.id;
+    const activeSub = activeCat?.subcategories?.find(s => s.slug === filters.subcategory);
+    if (activeSub) params.subcategory_id = activeSub.id;
+    productsAPI.getColors(params).then(r => setAvailableColors(r.data.colors || [])).catch(() => setAvailableColors([]));
+  }, [filters.category, filters.subcategory, categoryTree]);
 
   async function fetchProducts() {
     setLoading(true);
@@ -37,10 +65,13 @@ function ProductsContent() {
       const params = { page: filters.page, limit: 24 };
       if (filters.search) params.search = filters.search;
       if (filters.category) params.category = filters.category;
+      if (filters.subcategory) params.subcategory = filters.subcategory;
+      if (filters.sub_subcategory) params.sub_subcategory = filters.sub_subcategory;
       if (filters.min_price) params.min_price = filters.min_price;
       if (filters.max_price) params.max_price = filters.max_price;
       if (filters.min_rating) params.min_rating = filters.min_rating;
       if (filters.brand) params.brand = filters.brand;
+      if (filters.color) params.color = filters.color;
       if (filters.sort) params.sort = filters.sort;
       const res = await productsAPI.getAll(params);
       setProducts(res.data.products || []);
@@ -57,7 +88,14 @@ function ProductsContent() {
     { value: 'discount', label: 'Discount' },
   ];
 
-  const activeCategory = categories.find(c => c.slug === filters.category);
+  // Resolve active hierarchy for breadcrumb + title
+  const activeCat = categoryTree.find(c => c.slug === filters.category);
+  const activeSub = activeCat?.subcategories?.find(s => s.slug === filters.subcategory);
+  const activeSubSub = activeSub?.subSubcategories?.find(ss => ss.slug === filters.sub_subcategory);
+  const pageTitle = activeSubSub?.name || activeSub?.name || activeCat?.name || (filters.search ? `"${filters.search}"` : 'All Products');
+
+  // Color hex map for swatches
+  const colorHexMap = { Black: '#000', White: '#fff', Blue: '#2196F3', Red: '#F44336', Green: '#4CAF50', Gold: '#FFD700', Silver: '#C0C0C0', Pink: '#E91E63', Grey: '#9E9E9E', Brown: '#795548', Yellow: '#FFEB3B', Purple: '#9C27B0' };
 
   /* ─── Sidebar ───────────────────────────── */
   const Sidebar = () => (
@@ -65,34 +103,78 @@ function ProductsContent() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid #f0f0f0' }}>
         <span style={{ fontSize: 16, fontWeight: 700, color: '#212121' }}>Filters</span>
-        {(filters.category || filters.min_price || filters.min_rating || filters.brand) && (
-          <button onClick={() => setFilters(p => ({ ...p, category: '', min_price: '', max_price: '', min_rating: '', brand: '', page: 1 }))}
+        {(filters.category || filters.subcategory || filters.sub_subcategory || filters.min_price || filters.min_rating || filters.brand || filters.color) && (
+          <button onClick={() => setFilters(p => ({ ...p, category: '', subcategory: '', sub_subcategory: '', min_price: '', max_price: '', min_rating: '', brand: '', color: '', page: 1 }))}
             style={{ fontSize: 13, color: '#2874f0', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', textTransform: 'uppercase' }}>
             Clear All
           </button>
         )}
       </div>
 
-      {/* CATEGORIES */}
+      {/* CATEGORIES — 3 tier drilldown */}
       <FilterSection title="CATEGORIES">
-        {filters.category && (
-          <button onClick={() => setFilters(p => ({ ...p, category: '', page: 1 }))}
+        {/* Back navigation */}
+        {filters.sub_subcategory && (
+          <button onClick={() => setFilters(p => ({ ...p, sub_subcategory: '', page: 1 }))}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#2874f0', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 6, padding: 0 }}>
+            ‹ {activeSub?.name || 'Back'}
+          </button>
+        )}
+        {!filters.sub_subcategory && filters.subcategory && (
+          <button onClick={() => setFilters(p => ({ ...p, subcategory: '', sub_subcategory: '', page: 1 }))}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#2874f0', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 6, padding: 0 }}>
+            ‹ {activeCat?.name || 'Back'}
+          </button>
+        )}
+        {!filters.subcategory && filters.category && (
+          <button onClick={() => setFilters(p => ({ ...p, category: '', subcategory: '', sub_subcategory: '', page: 1 }))}
             style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#2874f0', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 6, padding: 0 }}>
             ‹ All Categories
           </button>
         )}
-        {categories.map(cat => (
-          <div key={cat.id}
-            onClick={() => setFilters(p => ({ ...p, category: cat.slug, page: 1 }))}
-            style={{
-              padding: '4px 0', cursor: 'pointer', fontSize: 13,
-              color: filters.category === cat.slug ? '#212121' : '#555',
-              fontWeight: filters.category === cat.slug ? 600 : 400,
-            }}>
-            {filters.category === cat.slug && <span style={{ marginRight: 4 }}>▾</span>}
-            {cat.name}
-          </div>
-        ))}
+
+        {/* Show sub-subcategories if subcategory selected */}
+        {filters.subcategory && activeSub ? (
+          (activeSub.subSubcategories || []).map(ss => (
+            <div key={ss.id}
+              onClick={() => setFilters(p => ({ ...p, sub_subcategory: ss.slug, page: 1 }))}
+              style={{
+                padding: '4px 0', cursor: 'pointer', fontSize: 13,
+                color: filters.sub_subcategory === ss.slug ? '#212121' : '#555',
+                fontWeight: filters.sub_subcategory === ss.slug ? 600 : 400,
+              }}>
+              {filters.sub_subcategory === ss.slug && <span style={{ marginRight: 4 }}>▾</span>}
+              {ss.name}
+            </div>
+          ))
+        ) : filters.category && activeCat ? (
+          /* Show subcategories of selected category */
+          (activeCat.subcategories || []).map(sub => (
+            <div key={sub.id}
+              onClick={() => setFilters(p => ({ ...p, subcategory: sub.slug, sub_subcategory: '', page: 1 }))}
+              style={{
+                padding: '4px 0', cursor: 'pointer', fontSize: 13,
+                color: filters.subcategory === sub.slug ? '#212121' : '#555',
+                fontWeight: filters.subcategory === sub.slug ? 600 : 400,
+              }}>
+              {filters.subcategory === sub.slug && <span style={{ marginRight: 4 }}>▾</span>}
+              {sub.name}
+            </div>
+          ))
+        ) : (
+          /* Show top-level categories */
+          categoryTree.map(cat => (
+            <div key={cat.id}
+              onClick={() => setFilters(p => ({ ...p, category: cat.slug, subcategory: '', sub_subcategory: '', page: 1 }))}
+              style={{
+                padding: '4px 0', cursor: 'pointer', fontSize: 13,
+                color: filters.category === cat.slug ? '#212121' : '#555',
+                fontWeight: filters.category === cat.slug ? 600 : 400,
+              }}>
+              {cat.name}
+            </div>
+          ))
+        )}
       </FilterSection>
 
       {/* BRAND */}
@@ -125,6 +207,46 @@ function ProductsContent() {
           </button>
         )}
       </FilterSection>
+
+      {/* COLOR */}
+      {availableColors.length > 0 && (
+        <FilterSection title="COLOR">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {availableColors.map(c => {
+              const selectedColors = filters.color ? filters.color.split(',') : [];
+              const isChecked = selectedColors.includes(c);
+              return (
+                <button key={c} onClick={() => {
+                  let next;
+                  if (isChecked) next = selectedColors.filter(x => x !== c).join(',');
+                  else next = [...selectedColors, c].join(',');
+                  setFilters(p => ({ ...p, color: next, page: 1 }));
+                }}
+                  title={c}
+                  style={{
+                    width: 28, height: 28, borderRadius: '50%',
+                    background: colorHexMap[c] || '#ccc',
+                    border: isChecked ? '3px solid #2874f0' : c === 'White' ? '1px solid #ddd' : '2px solid transparent',
+                    cursor: 'pointer', position: 'relative',
+                    boxShadow: isChecked ? '0 0 0 2px #fff, 0 0 0 4px #2874f0' : 'none',
+                  }}>
+                  {isChecked && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c === 'White' || c === 'Yellow' || c === 'Gold' ? '#333' : '#fff'} strokeWidth="3" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }}>
+                      <path d="M5 13l4 4L19 7"/>
+                    </svg>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {/* Color names below */}
+          {filters.color && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#555' }}>
+              Selected: {filters.color.split(',').join(', ')}
+            </div>
+          )}
+        </FilterSection>
+      )}
 
       {/* PRICE */}
       <FilterSection title="PRICE">
@@ -192,28 +314,37 @@ function ProductsContent() {
           <div style={{ fontSize: 12, color: '#878787', marginBottom: 4, padding: '4px 0' }}>
             <Link href="/" style={{ color: '#878787', textDecoration: 'none' }}
               onMouseEnter={e=>e.target.style.color='#2874f0'} onMouseLeave={e=>e.target.style.color='#878787'}>Home</Link>
-            {activeCategory && <><span style={{ margin: '0 6px' }}>&gt;</span><span style={{ color: '#212121' }}>{activeCategory.name}</span></>}
+            {activeCat && (
+              <>
+                <span style={{ margin: '0 6px' }}>&gt;</span>
+                <Link href={`/products?category=${activeCat.slug}`} style={{ color: activeSub ? '#878787' : '#212121', textDecoration: 'none' }}
+                  onMouseEnter={e=>e.target.style.color='#2874f0'} onMouseLeave={e=>e.target.style.color= activeSub ? '#878787' : '#212121'}>{activeCat.name}</Link>
+              </>
+            )}
+            {activeSub && (
+              <>
+                <span style={{ margin: '0 6px' }}>&gt;</span>
+                <Link href={`/products?category=${activeCat.slug}&subcategory=${activeSub.slug}`} style={{ color: activeSubSub ? '#878787' : '#212121', textDecoration: 'none' }}
+                  onMouseEnter={e=>e.target.style.color='#2874f0'} onMouseLeave={e=>e.target.style.color= activeSubSub ? '#878787' : '#212121'}>{activeSub.name}</Link>
+              </>
+            )}
+            {activeSubSub && (
+              <>
+                <span style={{ margin: '0 6px' }}>&gt;</span>
+                <span style={{ color: '#212121' }}>{activeSubSub.name}</span>
+              </>
+            )}
             {filters.search && <><span style={{ margin: '0 6px' }}>&gt;</span><span style={{ color: '#212121' }}>{filters.search}</span></>}
           </div>
 
           {/* Title bar */}
           <div style={{ background: '#fff', padding: '12px 16px', marginBottom: 0, boxShadow: '0 1px 2px rgba(0,0,0,.06)' }}>
-            {activeCategory ? (
-              <div>
-                <h1 style={{ fontSize: 16, fontWeight: 600, color: '#212121', display: 'inline', margin: 0 }}>{activeCategory.name}</h1>
-                <span style={{ fontSize: 12, color: '#878787', marginLeft: 8 }}>
-                  (Showing 1 – {products.length} of {pagination?.total || 0} products)
-                </span>
-              </div>
-            ) : filters.search ? (
-              <span style={{ fontSize: 14, color: '#212121' }}>
-                Showing 1 – {products.length} of <strong>{pagination?.total || 0}</strong> results for &quot;<strong>{filters.search}</strong>&quot;
+            <div>
+              <h1 style={{ fontSize: 16, fontWeight: 600, color: '#212121', display: 'inline', margin: 0 }}>{pageTitle}</h1>
+              <span style={{ fontSize: 12, color: '#878787', marginLeft: 8 }}>
+                (Showing 1 – {products.length} of {pagination?.total || 0} products)
               </span>
-            ) : (
-              <span style={{ fontSize: 14, color: '#212121' }}>
-                Showing 1 – {products.length} of <strong>{pagination?.total || 0}</strong> products
-              </span>
-            )}
+            </div>
           </div>
 
           {/* Sort Bar */}

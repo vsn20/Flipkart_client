@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
-import { productsAPI } from '@/lib/api';
+import { productsAPI, categoriesAPI } from '@/lib/api';
 import { debounce } from '@/lib/utils';
 
 export default function Navbar() {
@@ -276,517 +276,52 @@ const searchBorder = isWhiteNav ? '2px solid #2874f0' : 'none';
 }
 
 /* ────────────────────────────────────────────────────────
-   SubNav – Full-width Mega Menu Dropdowns
+   SubNav – Dynamic Mega Menu from API
    ──────────────────────────────────────────────────────── */
 function SubNav() {
   const [activeMenu, setActiveMenu] = useState(null);
+  const [categoryTree, setCategoryTree] = useState([]);
 
-  const navItems = [
-    {
-      name: 'Electronics', slug: 'electronics',
-      mega: [
-        {
-          heading: 'Mobiles',
-          links: [
-            { label: 'Mi', slug: 'electronics' },
-            { label: 'Realme', slug: 'electronics' },
-            { label: 'Samsung', slug: 'electronics' },
-            { label: 'Infinix', slug: 'electronics' },
-            { label: 'OPPO', slug: 'electronics' },
-            { label: 'Apple', slug: 'electronics' },
-            { label: 'Vivo', slug: 'electronics' },
-            { label: 'Honor', slug: 'electronics' },
-            { label: 'Asus', slug: 'electronics' },
-            { label: 'POCO', slug: 'electronics' },
-          ],
-        },
-        {
-          heading: 'Mobile Accessories',
-          links: [
-            { label: 'Mobile Cases', slug: 'electronics' },
-            { label: 'Headphones & Headsets', slug: 'electronics' },
-            { label: 'Power Banks', slug: 'electronics' },
-            { label: 'Screenguards', slug: 'electronics' },
-            { label: 'Smart Headphones', slug: 'electronics' },
-            { label: 'Mobile Cables', slug: 'electronics' },
-            { label: 'Mobile Chargers', slug: 'electronics' },
-            { label: 'Mobile Holders', slug: 'electronics' },
-          ],
-        },
-        {
-          heading: 'Smart Wearable Tech',
-          links: [
-            { label: 'Smart Watches', slug: 'electronics' },
-            { label: 'Smart Bands', slug: 'electronics' },
-            { label: 'Smart Glasses', slug: 'electronics' },
-          ],
-        },
-        {
-          heading: 'Laptops',
-          links: [
-            { label: 'Gaming Laptops', slug: 'electronics' },
-            { label: 'Desktop PCs', slug: 'electronics' },
-            { label: 'Laptop Accessories', slug: 'electronics' },
-            { label: 'Printers & Ink', slug: 'electronics' },
-            { label: 'Storage', slug: 'electronics' },
-          ],
-        },
-        {
-          heading: 'Camera & Accessories',
-          links: [
-            { label: 'DSLR & Mirrorless', slug: 'electronics' },
-            { label: 'Compact & Bridge Cameras', slug: 'electronics' },
-            { label: 'Sports & Action', slug: 'electronics' },
-            { label: 'Camera Accessories', slug: 'electronics' },
-          ],
-        },
-        {
-          heading: 'Speakers & Audio',
-          links: [
-            { label: 'Bluetooth Speakers', slug: 'electronics' },
-            { label: 'Home Audio Speakers', slug: 'electronics' },
-            { label: 'Soundbars', slug: 'electronics' },
-            { label: 'Home Theatres', slug: 'electronics' },
-          ],
-        },
-        {
-          heading: 'Featured',
-          isFeatured: true,
-          links: [
-            { label: 'Google Assistant Store', slug: 'electronics' },
-            { label: 'Laptops on Buyback Guarantee', slug: 'electronics' },
-            { label: 'Flipkart SmartBuy', slug: 'electronics' },
-            { label: 'Li-Polymer Power Banks', slug: 'electronics' },
-          ],
-        },
-      ],
-    },
-    {
-      name: 'TVs & Appliances', slug: 'appliances',
-      mega: [
-        {
-          heading: 'Television',
-          links: [
-            { label: 'OLED TVs', slug: 'appliances' },
-            { label: 'QLED TVs', slug: 'appliances' },
-            { label: '4K Ultra HD TVs', slug: 'appliances' },
-            { label: 'Full HD TVs', slug: 'appliances' },
-            { label: 'HD Ready TVs', slug: 'appliances' },
-            { label: 'Android TVs', slug: 'appliances' },
-            { label: 'Smart TVs', slug: 'appliances' },
-          ],
-        },
-        {
-          heading: 'Washing Machine',
-          links: [
-            { label: 'Fully Automatic Front Load', slug: 'appliances' },
-            { label: 'Fully Automatic Top Load', slug: 'appliances' },
-            { label: 'Semi Automatic', slug: 'appliances' },
-            { label: 'Dryers', slug: 'appliances' },
-          ],
-        },
-        {
-          heading: 'Air Conditioners',
-          links: [
-            { label: 'Inverter ACs', slug: 'appliances' },
-            { label: 'Split ACs', slug: 'appliances' },
-            { label: 'Window ACs', slug: 'appliances' },
-            { label: 'Portable ACs', slug: 'appliances' },
-          ],
-        },
-        {
-          heading: 'Refrigerators',
-          links: [
-            { label: 'Single Door', slug: 'appliances' },
-            { label: 'Double Door', slug: 'appliances' },
-            { label: 'Triple Door', slug: 'appliances' },
-            { label: 'Side By Side', slug: 'appliances' },
-            { label: 'Mini Refrigerators', slug: 'appliances' },
-          ],
-        },
-        {
-          heading: 'Kitchen Appliances',
-          links: [
-            { label: 'Microwave Ovens', slug: 'appliances' },
-            { label: 'OTGs', slug: 'appliances' },
-            { label: 'Dishwashers', slug: 'appliances' },
-            { label: 'Chimneys', slug: 'appliances' },
-            { label: 'Juicer/Mixer/Grinder', slug: 'appliances' },
-            { label: 'Electric Cookers', slug: 'appliances' },
-            { label: 'Induction Cooktops', slug: 'appliances' },
-          ],
-        },
-        {
-          heading: 'Small Home Appliances',
-          links: [
-            { label: 'Air Purifiers', slug: 'appliances' },
-            { label: 'Vacuum Cleaners', slug: 'appliances' },
-            { label: '   Irons', slug: 'appliances' },
-            { label: 'Water Purifiers', slug: 'appliances' },
-            { label: 'Fans', slug: 'appliances' },
-            { label: 'Geysers', slug: 'appliances' },
-          ],
-        },
-      ],
-    },
-    {
-      name: 'Men', slug: 'fashion-men',
-      mega: [
-        {
-          heading: 'Top Wear',
-          links: [
-            { label: "Men's T-Shirts", slug: 'fashion-men' },
-            { label: 'Casual Shirts', slug: 'fashion-men' },
-            { label: 'Formal Shirts', slug: 'fashion-men' },
-            { label: 'Sweatshirts', slug: 'fashion-men' },
-            { label: 'Sweaters', slug: 'fashion-men' },
-            { label: 'Jackets', slug: 'fashion-men' },
-            { label: 'Blazers & Coats', slug: 'fashion-men' },
-            { label: 'Suits', slug: 'fashion-men' },
-            { label: 'Rain Jackets', slug: 'fashion-men' },
-          ],
-        },
-        {
-          heading: 'Bottom Wear',
-          links: [
-            { label: 'Jeans', slug: 'fashion-men' },
-            { label: 'Casual Trousers', slug: 'fashion-men' },
-            { label: 'Formal Trousers', slug: 'fashion-men' },
-            { label: 'Shorts', slug: 'fashion-men' },
-            { label: 'Track Pants & Joggers', slug: 'fashion-men' },
-            { label: 'Cargos', slug: 'fashion-men' },
-            { label: 'Three Fourths', slug: 'fashion-men' },
-          ],
-        },
-        {
-          heading: 'Innerwear & Sleepwear',
-          links: [
-            { label: 'Briefs & Trunks', slug: 'fashion-men' },
-            { label: 'Boxers', slug: 'fashion-men' },
-            { label: 'Vests', slug: 'fashion-men' },
-            { label: 'Sleepwear & Loungewear', slug: 'fashion-men' },
-            { label: 'Thermals', slug: 'fashion-men' },
-          ],
-        },
-        {
-          heading: 'Footwear',
-          links: [
-            { label: 'Casual Shoes', slug: 'fashion-men' },
-            { label: 'Sports Shoes', slug: 'fashion-men' },
-            { label: 'Formal Shoes', slug: 'fashion-men' },
-            { label: 'Sneakers', slug: 'fashion-men' },
-            { label: 'Sandals & Floaters', slug: 'fashion-men' },
-            { label: 'Flip-Flops', slug: 'fashion-men' },
-            { label: 'Loafers', slug: 'fashion-men' },
-            { label: 'Boots', slug: 'fashion-men' },
-          ],
-        },
-        {
-          heading: 'Watches & Accessories',
-          links: [
-            { label: 'Watches', slug: 'fashion-men' },
-            { label: 'Wallets', slug: 'fashion-men' },
-            { label: 'Belts', slug: 'fashion-men' },
-            { label: 'Sunglasses', slug: 'fashion-men' },
-            { label: 'Caps & Hats', slug: 'fashion-men' },
-            { label: 'Bags & Backpacks', slug: 'fashion-men' },
-            { label: 'Ties, Cufflinks & Pocket Squares', slug: 'fashion-men' },
-          ],
-        },
-        {
-          heading: 'Ethnic Wear',
-          links: [
-            { label: "Men's Kurtas", slug: 'fashion-men' },
-            { label: 'Ethnic Sets', slug: 'fashion-men' },
-            { label: 'Sherwanis', slug: 'fashion-men' },
-            { label: 'Nehru Jackets', slug: 'fashion-men' },
-            { label: 'Dhotis & Mundus', slug: 'fashion-men' },
-          ],
-        },
-      ],
-    },
-    {
-      name: 'Women', slug: 'fashion-women',
-      mega: [
-        {
-          heading: 'Indian & Fusion Wear',
-          links: [
-            { label: 'Kurtas & Kurtis', slug: 'fashion-women' },
-            { label: 'Sarees', slug: 'fashion-women' },
-            { label: 'Ethnic Wear', slug: 'fashion-women' },
-            { label: 'Lehengas', slug: 'fashion-women' },
-            { label: 'Salwar Suits', slug: 'fashion-women' },
-            { label: 'Blouses', slug: 'fashion-women' },
-            { label: 'Dress Materials', slug: 'fashion-women' },
-            { label: 'Leggings, Salwars & Churidars', slug: 'fashion-women' },
-            { label: 'Skirts & Palazzos', slug: 'fashion-women' },
-            { label: 'Dupattas & Shawls', slug: 'fashion-women' },
-          ],
-        },
-        {
-          heading: 'Western Wear',
-          links: [
-            { label: 'Dresses', slug: 'fashion-women' },
-            { label: 'Tops', slug: 'fashion-women' },
-            { label: 'T-Shirts', slug: 'fashion-women' },
-            { label: 'Jeans', slug: 'fashion-women' },
-            { label: 'Trousers & Capris', slug: 'fashion-women' },
-            { label: 'Shorts & Skirts', slug: 'fashion-women' },
-            { label: 'Jumpsuits', slug: 'fashion-women' },
-            { label: 'Shrugs', slug: 'fashion-women' },
-            { label: 'Sweaters & Sweatshirts', slug: 'fashion-women' },
-            { label: 'Jackets & Coats', slug: 'fashion-women' },
-          ],
-        },
-        {
-          heading: 'Footwear',
-          links: [
-            { label: 'Flats', slug: 'fashion-women' },
-            { label: 'Casual Shoes', slug: 'fashion-women' },
-            { label: 'Heels', slug: 'fashion-women' },
-            { label: 'Boots', slug: 'fashion-women' },
-            { label: 'Sports Shoes & Floaters', slug: 'fashion-women' },
-          ],
-        },
-        {
-          heading: 'Jewellery',
-          links: [
-            { label: 'Fashion Jewellery', slug: 'fashion-women' },
-            { label: 'Fine Jewellery', slug: 'fashion-women' },
-            { label: 'Earrings', slug: 'fashion-women' },
-            { label: 'Rings', slug: 'fashion-women' },
-          ],
-        },
-        {
-          heading: 'Beauty & Personal Care',
-          links: [
-            { label: 'Make Up', slug: 'fashion-women' },
-            { label: 'Skincare', slug: 'fashion-women' },
-            { label: 'Hair Care', slug: 'fashion-women' },
-            { label: 'Fragrances', slug: 'fashion-women' },
-            { label: 'Lipsticks', slug: 'fashion-women' },
-          ],
-        },
-        {
-          heading: 'Handbags & Accessories',
-          links: [
-            { label: 'Handbags', slug: 'fashion-women' },
-            { label: 'Clutches', slug: 'fashion-women' },
-            { label: 'Watches', slug: 'fashion-women' },
-            { label: 'Sunglasses & Frames', slug: 'fashion-women' },
-            { label: 'Belts', slug: 'fashion-women' },
-          ],
-        },
-      ],
-    },
-    {
-      name: 'Baby & Kids', slug: 'toys-baby',
-      mega: [
-        {
-          heading: "Boys' Clothing",
-          links: [
-            { label: 'T-Shirts', slug: 'toys-baby' },
-            { label: 'Shirts', slug: 'toys-baby' },
-            { label: 'Shorts', slug: 'toys-baby' },
-            { label: 'Jeans', slug: 'toys-baby' },
-            { label: 'Trousers', slug: 'toys-baby' },
-            { label: 'Clothing Sets', slug: 'toys-baby' },
-            { label: 'Ethnic Wear', slug: 'toys-baby' },
-          ],
-        },
-        {
-          heading: "Girls' Clothing",
-          links: [
-            { label: 'Dresses', slug: 'toys-baby' },
-            { label: 'Tops', slug: 'toys-baby' },
-            { label: 'T-Shirts', slug: 'toys-baby' },
-            { label: 'Clothing Sets', slug: 'toys-baby' },
-            { label: 'Lehenga Cholis', slug: 'toys-baby' },
-            { label: 'Kurta Sets', slug: 'toys-baby' },
-          ],
-        },
-        {
-          heading: "Kids' Footwear",
-          links: [
-            { label: "Boys' Footwear", slug: 'toys-baby' },
-            { label: "Girls' Footwear", slug: 'toys-baby' },
-            { label: 'Infant Footwear', slug: 'toys-baby' },
-          ],
-        },
-        {
-          heading: 'Toys',
-          links: [
-            { label: 'Remote Control Toys', slug: 'toys-baby' },
-            { label: 'Educational Toys', slug: 'toys-baby' },
-            { label: 'Soft Toys', slug: 'toys-baby' },
-            { label: 'Action Figures', slug: 'toys-baby' },
-            { label: 'Board Games', slug: 'toys-baby' },
-            { label: 'Puzzles', slug: 'toys-baby' },
-            { label: 'Musical Toys', slug: 'toys-baby' },
-          ],
-        },
-        {
-          heading: 'Baby Care',
-          links: [
-            { label: 'Diapers', slug: 'toys-baby' },
-            { label: 'Wipes', slug: 'toys-baby' },
-            { label: 'Baby Bath', slug: 'toys-baby' },
-            { label: 'Baby Grooming', slug: 'toys-baby' },
-            { label: 'Baby Food', slug: 'toys-baby' },
-            { label: 'Baby Gear', slug: 'toys-baby' },
-          ],
-        },
-        {
-          heading: 'Featured Brands',
-          isFeatured: true,
-          links: [
-            { label: 'Miss & Chief', slug: 'toys-baby' },
-            { label: 'Barbie', slug: 'toys-baby' },
-            { label: 'Disney', slug: 'toys-baby' },
-            { label: 'Lego', slug: 'toys-baby' },
-            { label: 'Funskool', slug: 'toys-baby' },
-          ],
-        },
-      ],
-    },
-    {
-      name: 'Home & Furniture', slug: 'home-furniture',
-      mega: [
-        {
-          heading: 'Kitchen, Cookware & Serveware',
-          links: [
-            { label: 'Pans', slug: 'home-furniture' },
-            { label: 'Tawas', slug: 'home-furniture' },
-            { label: 'Pressure Cookers', slug: 'home-furniture' },
-            { label: 'Kitchen Tools', slug: 'home-furniture' },
-            { label: 'Gas Stoves', slug: 'home-furniture' },
-            { label: 'Coffee Mugs', slug: 'home-furniture' },
-            { label: 'Dinner Set', slug: 'home-furniture' },
-            { label: 'Barware', slug: 'home-furniture' },
-          ],
-        },
-        {
-          heading: 'Bed Room Furniture',
-          links: [
-            { label: 'Beds', slug: 'home-furniture' },
-            { label: 'Mattresses', slug: 'home-furniture' },
-            { label: 'Wardrobes', slug: 'home-furniture' },
-            { label: 'Bedsheets', slug: 'home-furniture' },
-            { label: 'Curtains', slug: 'home-furniture' },
-            { label: 'Cushions & Pillows', slug: 'home-furniture' },
-            { label: 'Blankets', slug: 'home-furniture' },
-          ],
-        },
-        {
-          heading: 'Living Room Furniture',
-          links: [
-            { label: 'Sofas', slug: 'home-furniture' },
-            { label: 'Sofa Beds', slug: 'home-furniture' },
-            { label: 'TV Units', slug: 'home-furniture' },
-            { label: 'Dining Tables & Chairs', slug: 'home-furniture' },
-            { label: 'Coffee Tables', slug: 'home-furniture' },
-            { label: 'Shoe Racks', slug: 'home-furniture' },
-          ],
-        },
-        {
-          heading: 'Home Decor',
-          links: [
-            { label: 'Paintings', slug: 'home-furniture' },
-            { label: 'Clocks', slug: 'home-furniture' },
-            { label: 'Wall Shelves', slug: 'home-furniture' },
-            { label: 'Stickers', slug: 'home-furniture' },
-            { label: 'Showpieces & Figurines', slug: 'home-furniture' },
-          ],
-        },
-        {
-          heading: 'Home Lighting',
-          links: [
-            { label: 'Bulbs', slug: 'home-furniture' },
-            { label: 'Wall Lamp', slug: 'home-furniture' },
-            { label: 'Table Lamp', slug: 'home-furniture' },
-            { label: 'Ceiling Lamp', slug: 'home-furniture' },
-            { label: 'Emergency Lights', slug: 'home-furniture' },
-          ],
-        },
-        {
-          heading: 'Smart Home Automation',
-          links: [
-            { label: 'Smart Security System', slug: 'home-furniture' },
-            { label: 'Smart Door Locks', slug: 'home-furniture' },
-          ],
-        },
-        {
-          heading: 'Home Improvement',
-          links: [
-            { label: 'Tools & Measuring Equipment', slug: 'home-furniture' },
-            { label: 'Home Utilities & Organizers', slug: 'home-furniture' },
-            { label: 'Lawn & Gardening', slug: 'home-furniture' },
-            { label: 'Bathroom & Kitchen Fittings', slug: 'home-furniture' },
-          ],
-        },
-      ],
-    },
-    {
-      name: 'Sports, Books & More', slug: '',
-      mega: [
-        {
-          heading: 'Sports',
-          links: [
-            { label: 'Cricket', slug: '' },
-            { label: 'Badminton', slug: '' },
-            { label: 'Cycling', slug: '' },
-            { label: 'Football', slug: '' },
-            { label: 'Fitness Gadgets', slug: '' },
-            { label: 'Gym Equipment', slug: '' },
-            { label: 'Yoga & Accessories', slug: '' },
-          ],
-        },
-        {
-          heading: 'Books',
-          links: [
-            { label: 'Entrance Exams', slug: '' },
-            { label: 'Academic & Professional', slug: '' },
-            { label: 'Fiction', slug: '' },
-            { label: 'Non-Fiction', slug: '' },
-            { label: 'Children Books', slug: '' },
-          ],
-        },
-        {
-          heading: 'Music',
-          links: [
-            { label: 'Musical Instruments', slug: '' },
-            { label: 'Guitar', slug: '' },
-            { label: 'Keyboard', slug: '' },
-          ],
-        },
-        {
-          heading: 'Stationery',
-          links: [
-            { label: 'Pens & Writing', slug: '' },
-            { label: 'Art & Craft Supplies', slug: '' },
-            { label: 'School Supplies', slug: '' },
-            { label: 'Office Supplies', slug: '' },
-          ],
-        },
-        {
-          heading: 'Gaming',
-          links: [
-            { label: 'Gaming Consoles', slug: '' },
-            { label: 'Gaming Titles', slug: '' },
-            { label: 'Gaming Accessories', slug: '' },
-          ],
-        },
-      ],
-    },
+  useEffect(() => {
+    const fetchTree = async () => {
+      try {
+        const res = await categoriesAPI.getAll();
+        setCategoryTree(res.data.categories || []);
+      } catch { /* silent */ }
+    };
+    fetchTree();
+  }, []);
+
+  // Static nav items that don't come from the DB
+  const staticItems = [
     { name: 'Flights', slug: '', mega: null },
     { name: 'Offer Zone', slug: 'products', mega: null },
   ];
-  const rightAlignedItems = ['Home & Furniture', 'Sports, Books & More'];
+
+  // Build navItems from API category tree
+  const navItems = categoryTree.map(cat => ({
+    name: cat.name,
+    slug: cat.slug,
+    mega: cat.subcategories?.length > 0 ? cat.subcategories.map(sub => ({
+      heading: sub.name,
+      headingSlug: sub.slug,
+      catSlug: cat.slug,
+      links: (sub.subSubcategories || []).map(subsub => ({
+        label: subsub.name,
+        subSlug: sub.slug,
+        subSubSlug: subsub.slug,
+        catSlug: cat.slug,
+      })),
+    })) : null,
+  }));
+
+  const allItems = [...navItems, ...staticItems];
+  const rightAlignedItems = ['Home & Furniture', 'Sports, Books & More', 'Grocery'];
 
   return (
     <nav style={{ background: '#fff', borderBottom: '1px solid #eee', boxShadow: '0 1px 3px rgba(0,0,0,.08)', position: 'relative', zIndex: 100 }}>
       <div style={{ maxWidth: 1300, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {navItems.map((item) => {
+        {allItems.map((item) => {
           const anchorRight = rightAlignedItems.includes(item.name);
           return (
             <div key={item.name} style={{ position: 'relative', flexShrink: 0 }}
@@ -810,7 +345,7 @@ function SubNav() {
                 </div>
               ) : (
                 <Link
-                  href={item.slug ? `/category/${item.slug}` : '/products'}
+                  href={item.slug ? `/products?category=${item.slug}` : '/products'}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 3, padding: '12px 18px', fontSize: 13.5,
                     fontWeight: 500, color: '#212121', textDecoration: 'none', whiteSpace: 'nowrap',
@@ -839,16 +374,20 @@ function SubNav() {
                       minWidth: 115, padding: '14px 14px', flex: 1,
                       borderRight: ci < item.mega.length - 1 ? '1px solid #f0f0f0' : 'none',
                     }}>
-                      <p style={{
-                        fontSize: 12.5, fontWeight: 700, color: col.isFeatured ? '#2874f0' : '#212121',
-                        marginBottom: 8, paddingBottom: 5,
-                        borderBottom: col.isFeatured ? 'none' : '1px solid #f0f0f0',
-                        cursor: 'pointer',
-                      }}>
-                        {col.heading} {!col.isFeatured && <span style={{ float: 'right', fontSize: 11, color: '#2874f0' }}>›</span>}
-                      </p>
+                      <Link
+                        href={`/products?category=${col.catSlug}&subcategory=${col.headingSlug}`}
+                        onClick={() => setActiveMenu(null)}
+                        style={{
+                          display: 'block', fontSize: 12.5, fontWeight: 700, color: '#212121',
+                          marginBottom: 8, paddingBottom: 5,
+                          borderBottom: '1px solid #f0f0f0',
+                          cursor: 'pointer', textDecoration: 'none',
+                        }}
+                      >
+                        {col.heading} <span style={{ float: 'right', fontSize: 11, color: '#2874f0' }}>›</span>
+                      </Link>
                       {col.links.map((link) => (
-                        <Link key={link.label} href={link.slug ? `/products?category=${link.slug}` : '/products'}
+                        <Link key={link.label} href={`/products?category=${link.catSlug}&subcategory=${link.subSlug}&sub_subcategory=${link.subSubSlug}`}
                           style={{
                             display: 'block', fontSize: 12, color: '#555', textDecoration: 'none',
                             padding: '2px 0', lineHeight: 1.6, transition: 'color .12s',

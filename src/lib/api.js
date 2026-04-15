@@ -50,13 +50,18 @@ export const productsAPI = {
   getById: (id) => api.get(`/products/${id}`),
   getFeatured: () => api.get('/products/featured'),
   searchSuggestions: (q) => api.get('/products/search', { params: { q } }),
-  getBrands: (category_id) => api.get('/products/brands', { params: { category_id } }),
+  getBrands: (params) => api.get('/products/brands', { params }),
+  getColors: (params) => api.get('/products/colors', { params }),
 };
 
 // ─── Categories API ──────────────────────────────────
 export const categoriesAPI = {
   getAll: () => api.get('/categories'),
   getProducts: (id, params) => api.get(`/categories/${id}/products`, { params }),
+  getSubcategories: (id) => api.get(`/categories/${id}/subcategories`),
+  getSubSubcategories: (id) => api.get(`/categories/subcategories/${id}/subsubcategories`),
+  getAllBrands: () => api.get('/categories/brands/all'),
+  getAllColors: () => api.get('/categories/colors/all'),
 };
 
 // ─── Cart API ────────────────────────────────────────
