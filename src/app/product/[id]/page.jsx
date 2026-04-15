@@ -60,7 +60,7 @@ export default function ProductDetailPage() {
   const handleAddToCart = async () => {
     if (!isAuthenticated) { toast.error('Please login'); router.push('/login'); return; }
     const ok = await addToCart(product.id);
-    if (ok) { setAddedToCart(true); toast.success('Added to cart'); }
+    if (ok) { setAddedToCart(true); }
   };
   
   const openAddressModal = async () => {
