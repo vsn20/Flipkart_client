@@ -20,6 +20,8 @@ export default function ProductDetailPage() {
   const [inWishlist, setInWishlist] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
   const [showFullName, setShowFullName] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showDetails, setShowDetails] = useState(false);
   
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -42,6 +44,7 @@ export default function ProductDetailPage() {
         setProduct(res.data.product);
         setSimilarProducts(res.data.similarProducts || []);
         setAddedToCart(false);
+        setSelectedImageIndex(0);
         if (isAuthenticated) {
           try { const w = await wishlistAPI.check(id); setInWishlist(w.data.inWishlist); } catch {}
           try {
@@ -111,6 +114,18 @@ export default function ProductDetailPage() {
   const deliveryDate = new Date(); deliveryDate.setDate(deliveryDate.getDate()+3);
   const deliveryStr = deliveryDate.toLocaleDateString('en-IN',{day:'numeric', month:'short'}) + ', ' + deliveryDate.toLocaleDateString('en-IN',{weekday:'short'});
 
+  // Parse specifications
+  let specs = {};
+  try {
+    if (typeof product.specifications === 'string') specs = JSON.parse(product.specifications);
+    else if (product.specifications) specs = product.specifications;
+  } catch {}
+  const specEntries = Object.entries(specs);
+
+  // Stock status
+  const inStock = product.stock > 0;
+  const lowStock = product.stock > 0 && product.stock <= 10;
+
   return (
     <div style={{background:'#fff', minHeight:'100vh'}}>
       <div style={{maxWidth:1366, margin:'0 auto', padding:'0 16px'}}>
@@ -123,26 +138,41 @@ export default function ProductDetailPage() {
         </div>
 
         <div style={{display:'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 32, alignItems:'flex-start'}}>
-          {/* LEFT - Image Grid */}
-          <div style={{flex: 1.5, display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 8 : 16, width: isMobile ? '100%' : 'auto'}}>
-            {images.slice(0,4).map((img,i)=>(
-              <div key={i} style={{background:'#f7f7f7', borderRadius:12, overflow:'hidden', aspectRatio:'1/1', position:'relative'}}>
-                <img src={img} alt="" style={{width:'100%', height:'100%', objectFit:'cover'}}/>
-                {i===1 && (
-                  <div style={{position:'absolute', top:12, right:12, display:'flex', flexDirection:'column', gap:8}}>
-                    <button onClick={toggleWishlist} style={{width:40, height:40, borderRadius:'50%', background:'#fff', border:'none', boxShadow:'0 2px 8px rgba(0,0,0,.15)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'}}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill={inWishlist?'#ff4343':'none'} stroke={inWishlist?'#ff4343':'#212121'} strokeWidth="1.5"><path d="M12 21s-6.7-4.3-9.3-7.3C-0.3 10.7 1 6.5 4.7 5c2-.8 4.3-.3 5.8 1.3A6 6 0 0 1 19.3 5c3.7 1.5 5 5.7 2 8.7C18.7 16.7 12 21 12 21z"/></svg>
-                    </button>
-                    <button style={{width:40, height:40, borderRadius:'50%', background:'#fff', border:'none', boxShadow:'0 2px 8px rgba(0,0,0,.15)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'}}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#212121" strokeWidth="1.5"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></svg>
-                    </button>
-                  </div>
-                )}
-                {i===3 && images.length>4 && (
-                  <div style={{position:'absolute', inset:0, background:'rgba(0,0,0,.6)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:28, fontWeight:700}}>+{images.length-4}</div>
-                )}
+          {/* LEFT - Image Carousel */}
+          <div style={{flex: 1.5, width: isMobile ? '100%' : 'auto'}}>
+            {/* Main Image */}
+            <div style={{background:'#f7f7f7', borderRadius:12, overflow:'hidden', aspectRatio:'1/1', position:'relative', marginBottom:8}}>
+              <img src={images[selectedImageIndex]} alt="" style={{width:'100%', height:'100%', objectFit:'cover'}}/>
+              {/* Prev/Next Arrows */}
+              {images.length > 1 && (
+                <>
+                  <button onClick={() => setSelectedImageIndex(i => (i - 1 + images.length) % images.length)}
+                    style={{position:'absolute', left:8, top:'50%', transform:'translateY(-50%)', width:36, height:36, borderRadius:'50%', background:'rgba(255,255,255,0.9)', border:'1px solid #e0e0e0', boxShadow:'0 1px 4px rgba(0,0,0,.12)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, color:'#212121'}}>‹</button>
+                  <button onClick={() => setSelectedImageIndex(i => (i + 1) % images.length)}
+                    style={{position:'absolute', right:8, top:'50%', transform:'translateY(-50%)', width:36, height:36, borderRadius:'50%', background:'rgba(255,255,255,0.9)', border:'1px solid #e0e0e0', boxShadow:'0 1px 4px rgba(0,0,0,.12)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, color:'#212121'}}>›</button>
+                </>
+              )}
+              {/* Wishlist / Share */}
+              <div style={{position:'absolute', top:12, right:12, display:'flex', flexDirection:'column', gap:8}}>
+                <button onClick={toggleWishlist} style={{width:40, height:40, borderRadius:'50%', background:'#fff', border:'none', boxShadow:'0 2px 8px rgba(0,0,0,.15)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill={inWishlist?'#ff4343':'none'} stroke={inWishlist?'#ff4343':'#212121'} strokeWidth="1.5"><path d="M12 21s-6.7-4.3-9.3-7.3C-0.3 10.7 1 6.5 4.7 5c2-.8 4.3-.3 5.8 1.3A6 6 0 0 1 19.3 5c3.7 1.5 5 5.7 2 8.7C18.7 16.7 12 21 12 21z"/></svg>
+                </button>
+                <button style={{width:40, height:40, borderRadius:'50%', background:'#fff', border:'none', boxShadow:'0 2px 8px rgba(0,0,0,.15)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#212121" strokeWidth="1.5"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></svg>
+                </button>
               </div>
-            ))}
+            </div>
+            {/* Thumbnail Strip */}
+            {images.length > 1 && (
+              <div style={{display:'flex', gap:6, overflowX:'auto', paddingBottom:4}}>
+                {images.map((img, i) => (
+                  <button key={i} onClick={() => setSelectedImageIndex(i)}
+                    style={{width:56, height:56, flexShrink:0, borderRadius:8, border: i === selectedImageIndex ? '2px solid #2874f0' : '1px solid #e0e0e0', background:'#f7f7f7', cursor:'pointer', padding:2, overflow:'hidden', opacity: i === selectedImageIndex ? 1 : 0.7}}>
+                    <img src={img} alt="" style={{width:'100%', height:'100%', objectFit:'cover', borderRadius:6}} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* RIGHT - Details */}
@@ -174,6 +204,18 @@ export default function ProductDetailPage() {
               <span style={{color:'#008c00', fontSize:22, fontWeight:700}}>↓{discountPercent}%</span>
               <span style={{color:'#878787', fontSize:20, textDecoration:'line-through'}}>{formatPrice(product.mrp)}</span>
               <span style={{color:'#212121', fontSize:28, fontWeight:700}}>{formatPrice(product.price)}</span>
+            </div>
+
+            {/* Stock Status */}
+            <div style={{marginBottom:12}}>
+              {inStock ? (
+                <span style={{color:'#388e3c', fontSize:14, fontWeight:600}}>
+                  ✓ In Stock ({product.stock} units available)
+                  {lowStock && <span style={{color:'#ff6161', marginLeft:8, fontWeight:500}}>— Only {product.stock} left, hurry!</span>}
+                </span>
+              ) : (
+                <span style={{color:'#ff6161', fontSize:14, fontWeight:600}}>✕ Out of Stock</span>
+              )}
             </div>
 
             {/* WOW DEAL */}
@@ -240,13 +282,42 @@ export default function ProductDetailPage() {
 
             {/* All details */}
             <div style={{borderBottom:'1px solid #f0f0f0', paddingBottom:16, marginBottom:16}}>
-              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer'}}>
+              <div onClick={() => setShowDetails(!showDetails)} style={{display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer'}}>
                 <div>
                   <div style={{fontSize:18, fontWeight:600}}>All details</div>
                   <div style={{fontSize:13, color:'#878787'}}>Features, description and more</div>
                 </div>
-                <div style={{width:28, height:28, borderRadius:'50%', background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center'}}>⌄</div>
+                <div style={{width:28, height:28, borderRadius:'50%', background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center'}}>{showDetails ? '⌃' : '⌄'}</div>
               </div>
+
+              {showDetails && (
+                <div style={{marginTop:16}}>
+                  {/* Description */}
+                  {product.description && (
+                    <div style={{marginBottom:16}}>
+                      <div style={{fontSize:15, fontWeight:600, color:'#212121', marginBottom:8}}>Description</div>
+                      <div style={{fontSize:14, color:'#212121', lineHeight:'22px', whiteSpace:'pre-wrap'}}>{product.description}</div>
+                    </div>
+                  )}
+
+                  {/* Specifications */}
+                  {specEntries.length > 0 && (
+                    <div>
+                      <div style={{fontSize:15, fontWeight:600, color:'#212121', marginBottom:8}}>Specifications</div>
+                      <table style={{width:'100%', borderCollapse:'collapse'}}>
+                        <tbody>
+                          {specEntries.map(([key, val]) => (
+                            <tr key={key}>
+                              <td style={{padding:'8px 12px 8px 0', fontSize:13, color:'#878787', width:'35%', verticalAlign:'top', borderBottom:'1px solid #f5f5f5'}}>{key}</td>
+                              <td style={{padding:'8px 0', fontSize:13, color:'#212121', borderBottom:'1px solid #f5f5f5'}}>{typeof val === 'object' ? JSON.stringify(val) : String(val)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Ratings */}
