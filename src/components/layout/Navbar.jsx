@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { productsAPI } from '@/lib/api';
@@ -9,6 +9,8 @@ import { debounce } from '@/lib/utils';
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
+  const isCartPage = pathname === '/cart';
   const { user, isAuthenticated, logout } = useAuth();
   const { cartCount } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
@@ -122,7 +124,7 @@ export default function Navbar() {
           </div>
 
           {/* Right Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto', marginRight: isCartPage ? '72px' : '0' }}>
 
             {/* Login / My Account */}
             <div ref={userMenuRef} style={{ position: 'relative' }}>
@@ -183,69 +185,75 @@ export default function Navbar() {
             </div>
 
             {/* Become a Seller */}
-            <button style={{ color: '#fff', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 12px', fontSize: 15, fontWeight: 600, borderRadius: 2, whiteSpace: 'nowrap' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.13)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
-            >
-              Become a Seller
-            </button>
-
-            {/* More */}
-            <div ref={moreMenuRef} style={{ position: 'relative' }}>
-              <button onClick={() => setShowMoreMenu(v => !v)}
-                style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#fff', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 12px', fontSize: 15, fontWeight: 600, borderRadius: 2 }}
+            {!isCartPage && (
+              <button style={{ color: '#fff', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 12px', fontSize: 15, fontWeight: 600, borderRadius: 2, whiteSpace: 'nowrap' }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.13)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'none'}
               >
-                More
-                <svg width="14" height="14" fill="none" stroke="#fff" strokeWidth="2.5" viewBox="0 0 24 24" style={{ transform: showMoreMenu ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
-                  <path d="m6 9 6 6 6-6"/>
-                </svg>
+                Become a Seller
               </button>
-              {showMoreMenu && (
-                <div style={{ position: 'absolute', right: 0, top: '110%', background: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,.18)', zIndex: 300, minWidth: 200, borderRadius: 2 }}>
-                  {[
-                    { icon: '🔔', label: 'Notification Preferences' },
-                    { icon: '🎧', label: '24x7 Customer Care' },
-                    { icon: '📢', label: 'Advertise' },
-                    { icon: '📱', label: 'Download App' },
-                  ].map(item => (
-                    <button key={item.label}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '11px 16px', fontSize: 13, color: '#212121', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid #f9f9f9', textAlign: 'left' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                    >
-                      <span>{item.icon}</span>{item.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            )}
+
+            {/* More */}
+            {!isCartPage && (
+              <div ref={moreMenuRef} style={{ position: 'relative' }}>
+                <button onClick={() => setShowMoreMenu(v => !v)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#fff', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 12px', fontSize: 15, fontWeight: 600, borderRadius: 2 }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.13)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  More
+                  <svg width="14" height="14" fill="none" stroke="#fff" strokeWidth="2.5" viewBox="0 0 24 24" style={{ transform: showMoreMenu ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </button>
+                {showMoreMenu && (
+                  <div style={{ position: 'absolute', right: 0, top: '110%', background: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,.18)', zIndex: 300, minWidth: 200, borderRadius: 2 }}>
+                    {[
+                      { icon: '🔔', label: 'Notification Preferences' },
+                      { icon: '🎧', label: '24x7 Customer Care' },
+                      { icon: '📢', label: 'Advertise' },
+                      { icon: '📱', label: 'Download App' },
+                    ].map(item => (
+                      <button key={item.label}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '11px 16px', fontSize: 13, color: '#212121', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid #f9f9f9', textAlign: 'left' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                      >
+                        <span>{item.icon}</span>{item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Cart */}
-            <Link href="/cart"
-              style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#fff', textDecoration: 'none', padding: '6px 12px', fontSize: 15, fontWeight: 600, borderRadius: 2, position: 'relative' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.13)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
-            >
-              <span style={{ position: 'relative' }}>
-                <svg width="22" height="22" fill="none" stroke="#fff" strokeWidth="1.8" viewBox="0 0 24 24">
-                  <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
-                </svg>
-                {cartCount > 0 && (
-                  <span style={{ position: 'absolute', top: -8, right: -8, background: '#ff6161', color: '#fff', fontSize: 10, fontWeight: 700, minWidth: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px' }}>
-                    {cartCount > 9 ? '9+' : cartCount}
-                  </span>
-                )}
-              </span>
-              Cart
-            </Link>
+            {!isCartPage && (
+              <Link href="/cart"
+                style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#fff', textDecoration: 'none', padding: '6px 12px', fontSize: 15, fontWeight: 600, borderRadius: 2, position: 'relative' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.13)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              >
+                <span style={{ position: 'relative' }}>
+                  <svg width="22" height="22" fill="none" stroke="#fff" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+                  </svg>
+                  {cartCount > 0 && (
+                    <span style={{ position: 'absolute', top: -8, right: -8, background: '#ff6161', color: '#fff', fontSize: 10, fontWeight: 700, minWidth: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px' }}>
+                      {cartCount > 9 ? '9+' : cartCount}
+                    </span>
+                  )}
+                </span>
+                Cart
+              </Link>
+            )}
           </div>
         </div>
       </header>
 
       {/* ── Sub Nav / Category Bar ────────────────────── */}
-      <SubNav />
+      {!isCartPage && <SubNav />}
     </>
   );
 }
